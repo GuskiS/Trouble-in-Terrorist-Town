@@ -1,0 +1,401 @@
+[en]
+TTT_NONE = NONE
+TTT_TRAITOR = Traitor
+TTT_DETECTIVE = Detective
+TTT_INNOCENT = Innocent
+TTT_DEAD = DEAD
+TTT_SPECIAL = Traitor or Detective
+
+TTT_MODOFF1 = Game will start when there are atleast ^43^1 players!
+TTT_MODOFF2 = Wrongly set CVARs, there are too few players! Reseting CVARs.
+TTT_TWIN = Traitors Win!
+TTT_IWIN = The Innocent Win!
+TTT_AWARD1 = You have been awarded with bonus ^3%d credit^1 for killing more than ^3%dpercent^1 of ^4%L^1!
+TTT_AWARD2 = You have been awarded with bonus ^3%d credit^1 for killing ^4%L ^3%s^1!
+TTT_AWARD3 = You have been awarded with bonus ^3%d credit^1 because ^4%L ^3%s^1 was found dead!
+TTT_AWARD4 = You have been awarded with bonus ^3%d credit^1 because you survided ^3%d^1 seconds!
+TTT_KILLED1 = You were killed by ^3%s^1 who was ^4%L^1!
+TTT_KILLED2 = You killed ^3%s^1!
+TTT_KILLED3 = You killed ^3%s^1 who was ^4%L^1!
+TTT_SUICIDE = You died cause of ^3suicide^1, how could that happen!?
+TTT_ALIVE = You must be ^4dead^1 to use this command!
+TTT_DNASAMPLE1 = ^4DNA sample^1 of ^3%s^1 has decayed!
+TTT_DNASAMPLE2 = You destroyed the ^4DNA sample^1 of ^3%s^1!
+TTT_DNASAMPLE3 = You took ^4DNA sample^1 from ^3%s^1!
+TTT_CANOPENCELLS = ^3Cells^1 have been opened!
+TTT_NOTOPENCELLS = You must wait another ^4%0.1f^1 seconds!
+TTT_WARNING1 = As ^4%L^1, you killed ^4%L^1, for that you are warned ^3+1^1!
+TTT_WARNING2 = You have ^3%d/%d ^4%L^1, ^3%d/%d ^4%L^1 and ^3%d/%d ^4continued^1 warnings! Be carefull!
+TTT_PUNISHMENT1 = You have been ^3punished^1 for killing wrong players! You have now ^41 karma^1!
+TTT_PUNISHMENT2 = You have been ^3punished^1 for killing wrong players! You are now ^41 blind^1!
+TTT_PUNISHMENT3 = You have been ^3punished^1 for killing wrong players! You have now ^41 bad aim^1!
+TTT_UNIDENTIFIED = [UNIDENTIFIED]
+TTT_DEADBODY = Dead Body
+TTT_CALLDETECTIVE = Call Detective
+TTT_CALLDETECTIVE2 = ^3Detective^1 has been called to this ^4%L^1!
+TTT_CALLDETECTIVE3 = This ^4%L^1 has already been marked for ^3Detective^1 to see!
+TTT_NOBODY = That isn't a ^4%L^1! Are you sure you are aiming at right place?
+
+TTT_INFO_LINE1 = Player info about death
+TTT_INFO_LINE2 = He was killed in <b style='color:%s'>%d:%02d</b> with
+TTT_INFO_LINE3 = DNA active for <b style='color:%s'>%d</b> seconds
+
+TTT_WINNER_LINE1 = Winner Info
+TTT_WINNER_LINE2 = %s</b> slipped and fell over the cliff...
+TTT_WINNER_LINE3 = %s</b> bombed the place like real Terrorists do...
+TTT_WINNER_LINE4 = <b style='color:%s'>[%L] %s</b> was the assassin with %d kills!
+TTT_WINNER_LINE5 = You started this round with <b style='color:%s'>%d</b> karma, gained <b style='color:%s'>%d</b> karma<br/> which makes it total of <b style='color:%s'>%d</b> karma!
+TTT_WINNER_LINE6 = none! Shame on you..
+TTT_WINNER_LINE7 = You killed:
+
+TTT_ITEM_ID0 = C4 Bomb
+TTT_ITEM_ID1 = Defuse Kit
+TTT_ITEM_ID2 = Kevlar Armor
+TTT_ITEM_ID3 = Jihad Bomb
+TTT_ITEM_ID4 = Health Station
+TTT_ITEM_ID5 = DNA Scanner
+TTT_ITEM_ID6 = UMP45: Prototype
+TTT_ITEM_ID7 = Disguiser
+TTT_ITEM_ID8 = Death Station
+TTT_ITEM_ID10 = Silent USP
+TTT_ITEM_ID11 = Knife
+TTT_ITEM_ID12 = Teleport
+TTT_ITEM_ID13 = Pocket Revolver
+TTT_ITEM_ID14 = Golden Gun
+TTT_ITEM_ID15 = AWP
+TTT_ITEM_ID16 = Newton Launcher
+TTT_ITEM_C41 = , to set timer press ^3+attack2(mouse2) button^1
+TTT_ITEM_C42 = You can buy ^4%s^1 only after ^3%d seconds^1 of round have elapsed!
+TTT_ITEM_BACKPACK = , to activate ^4%s^1 press ^3flashlight button^1
+TTT_ITEM_DNA = , to activate ^4%s^1 press ^3+attack(mouse1) button^1
+TTT_ITEM_TELE1 = Coords \rx\w%0.1f \ry\w%0.1f \rz\w%0.1f
+TTT_ITEM_TELE2 = You have set your coordinates to ^3x%0.1f y%0.1f z%0.1f^1!
+TTT_ITEM_TELE3 = You have been teleported to ^3x%0.1f y%0.1f z%0.1f^1!
+TTT_ITEM_TELE4 = You have to wait ^3%0.1f seconds^1 to teleport again!
+TTT_ITEM1 = Only one active ^4%s^1 is allowed at the time!
+TTT_ITEM2 = You have bought a ^4%s^1%L!
+TTT_ITEM3 = You must be ^3%L^1 to purchase ^4%s^1!
+TTT_ITEM4 = You don't have enough credits to buy ^4%s^1, you need atleast ^3%d^1!
+TTT_ITEM5 = , it has been placed in your inventory
+TTT_NOITEMSTOTAL = There are no items available, ^3are they disabled^1!?
+TTT_NOITEMSTEAM = There are no items available for ^4%Ls^1!
+TTT_C41 = You must choose ^4C4^1 time between ^3%d and %d^1!
+TTT_C42 = You have set your timer to ^3%d seconds^1!
+TTT_HYN = You ^3%sactivated ^4%s^1!
+TTT_BACKPACK_NONE = You haven't bought any ^4items^1, press ^3buy buttons or write /buy^1
+TTT_TOOFARCLOSE = You are placing ^4%s^1 too far or too close to yourself!
+TTT_TOOFAR = You are using ^4%s^1 too far from ^4%L^1!
+TTT_DEFUSE1 = You succeeded to defuse the ^4C4^1!
+TTT_DEFUSE2 = You failed to defuse the ^4C4^1!
+TTT_DEFUSE3 = You are way too far to defuse ^4C4^1!
+
+TTT_KILL_SUICIDE = Suicide
+TTT_KILL_GENERIC = Generic
+TTT_KILL_SLASH = Slash
+TTT_KILL_BURN = Burn
+TTT_KILL_FREEZE = Freeze
+TTT_KILL_FALL = Fall
+TTT_KILL_BLAST = Explosion
+TTT_KILL_SHOCK = Electricity
+TTT_KILL_DROWN = Drown
+TTT_KILL_NERVEGAS = Gas
+TTT_KILL_POISON = Poison
+TTT_KILL_RADIATION = Radiation
+TTT_KILL_ACID = Acid
+
+[la]
+TTT_NONE = Neviens
+TTT_TRAITOR = Nodevējs
+TTT_DETECTIVE = Detektīvs
+TTT_INNOCENT = Nevainīgs
+TTT_DEAD = Miris
+TTT_SPECIAL = Nodevējs vai Detektīvs
+
+TTT_MODOFF1 = Spēle sāksies tikai tad, kad serverī būs vismaz 3 spēlētāji!
+TTT_MODOFF2 = Nepareizi uzstādīti CVARs, pārāk maz spēlētāju! Atjaunojam CVARs.
+TTT_TWIN = Nodevēji Uzvar!
+TTT_IWIN = Nevainīgie Uzvar!
+TTT_AWARD1 = Tu ieguvi %d kredītus par vairāk kā %d procentu no %L nogalināšanu!
+TTT_AWARD2 = Tu ieguvi %d kredītus par %L %s nogalināšanu!
+TTT_AWARD3 = Tu ieguvi %d kredītus, jo %L %s tika atrasts miris!
+TTT_AWARD4 = Tu ieguvi %d kredītus, jo tu izdzīvoji %d sekundes!
+TTT_KILLED1 = Tevi nogalināja %s, viņš bija %L!
+TTT_KILLED2 = Tu nogalināji %s!
+TTT_KILLED3 = Tu nogalināji %s, viņš bija %L!
+TTT_ALIVE = Tev jābūt mirušam, lai lietotu šo komandu!
+TTT_SUICIDE = Tu izdarīji pašnāvību, kā tas varēja gadīties!?
+TTT_DNASAMPLE1 = %s DNS paraugs ir zudis!
+TTT_DNASAMPLE2 = Tu iznīcināji %s DNS paraugu!
+TTT_DNASAMPLE3 = Tu paņēmi DNS paraugu no %s!
+TTT_CANOPENCELLS = Kameru durvis ir atvērtas!
+TTT_NOTOPENCELLS = Tev jāpagaida vēl %0.1f sekundes!
+TTT_WARNING1 = Kā %L, tu nogalināji %L, tāpēc saņem +1 brīdinājumu!
+TTT_WARNING2 = Tev ir %d/%d %L, %d/%d %L un %d/%d secīgie brīdinājumi! Esi uzmanīgs!
+TTT_PUNISHMENT1 = Tu esi sodits par nepareizo spēlētāju šaušanu! Tev tagad ir 1 karma!
+TTT_UNIDENTIFIED = [NEIDENFICĒTS]
+TTT_DEADBODY = Beigts Ķermenis
+TTT_CALLDETECTIVE = Izsaukt Detektīvu
+TTT_CALLDETECTIVE2 = Detektīvs ir ticis izsaukts uz šo %L!
+TTT_CALLDETECTIVE3 = Detektīvs jau ir izsaukts uz šo %L!
+TTT_NOBODY = Tas nav %L! Vai esi pārliecināts, ka tēmē pareizi?
+
+TTT_INFO_LINE1 = Spēlētāja informācija par nāvi
+TTT_INFO_LINE2 = Viņs tika nogalināts <b style='color:%s'>%d:%02d</b> ar
+TTT_INFO_LINE3 = DNS vēl aktīvs <b style='color:%s'>%d</b> sekundes
+
+TTT_WINNER_LINE1 = Uzvarētāja informācija
+TTT_WINNER_LINE2 = %s</b> paslīdēja un nokrita no kraujas...
+TTT_WINNER_LINE3 = %s</b> uzspridzināja visu kā īsti Teroristi to dara
+TTT_WINNER_LINE4 = <b style='color:%s'>[%L] %s</b> bija labākais slepkava ar %d nogalinātiem!
+TTT_WINNER_LINE5 = Tu sāki šo raundu ar <b style='color:%s'>%d</b> karmu, ieguvi papildus <b style='color:%s'>%d</b> karmu,<br/> kas kopumā tev dod <b style='color:%s'>%d</b> karmu!</b>
+TTT_WINNER_LINE6 = nevienu! Kaunējies būtu..
+TTT_WINNER_LINE7 = Tu nogalināji:
+
+TTT_ITEM_ID0 = C4 Bumba
+TTT_ITEM_ID1 = Atmīnēšanas Instrumenti
+TTT_ITEM_ID2 = Bruņas
+TTT_ITEM_ID3 = Jihad Bumba
+TTT_ITEM_ID4 = Dzīvības Stacija
+TTT_ITEM_ID5 = DNS Meklētājs
+TTT_ITEM_ID6 = UMP45: Prototips
+TTT_ITEM_ID7 = Maskēšanās
+TTT_ITEM_ID8 = Nāves Stacija
+TTT_ITEM_ID10 = USP ar klusinātāju
+TTT_ITEM_ID11 = Nazis
+TTT_ITEM_ID12 = Teleports
+TTT_ITEM_C41 = , lai uzstādītu laiku, nospied +attack2(mouse2) pogu
+TTT_ITEM_C42 = Tu vari iegātāties %s tikai pēc tam, kad %d sekundes ir pagājušas!
+TTT_ITEM_BACKPACK = , lai aktivizētu %s spied lukturīša pogu
+TTT_ITEM_DNA = , lai aktivizētu %s nospied +attack(mouse1) pogu
+TTT_ITEM_TELE1 = Kords \rx\w%0.1f \ry\w%0.1f \rz\w%0.1f
+TTT_ITEM_TELE2 = Tu esi uzstādījis savas koordinātas uz x%0.1f y%0.1f z%0.1f!
+TTT_ITEM_TELE3 = Tu esi nogādāts x%0.1f y%0.1f z%0.1f koordinātās!
+TTT_ITEM_TELE4 = Tev jāpagaida %0.1f sekundes, lai varētu atkal teleportēties!
+TTT_ITEM1 = Tikai viens aktīvs %s ir atļauts!
+TTT_ITEM2 = Tu iegādājies %s%L!
+TTT_ITEM3 = Tev vajag būt %L, lai nopirktu %s!
+TTT_ITEM4 = Tev nav pietiekami daudz kredītu, lai iegādātos %s, tev vajag vismaz %d!
+TTT_ITEM5 = , tas ir ievietots tavā inventārā
+TTT_NOITEMSTOTAL = Neviens priekšmets nav pieejams, vai tie ir atslēgti!?
+TTT_NOITEMSTEAM = Neviens priekšmets nav pieejams %L!
+TTT_C41 = Tev jāizvēlas C4 laiks starp %d un %d sekundēm!
+TTT_C42 = Tu esi uzstādījis C4 laiku uz %d sekundēm!
+TTT_HYN = Tu %saktivizēji %s!
+TTT_BACKPACK_NONE = Tu neesi nopircis nevienu lietu, nospiedz pirkšanas pogas vai raksti /buy
+TTT_TOOFARCLOSE = Tu liec %s pārāk tālu vai tuvu sev!
+TTT_TOOFAR = Tu lieto %s pārāk tālu no %L!
+TTT_DEFUSE1 = Tev izdevās atmīnēt C4!
+TTT_DEFUSE2 = Tev neizdevās atmīnēt C4!
+TTT_DEFUSE3 = Tu esi par tālu no C4!
+
+TTT_KILL_SUICIDE = Pašnāvības
+TTT_KILL_GENERIC = Dabīga bojājuma
+TTT_KILL_SLASH = Sagriešanas
+TTT_KILL_BURN = Sadegšanas
+TTT_KILL_FREEZE = Sasalšanas
+TTT_KILL_FALL = Nokrišanas
+TTT_KILL_BLAST = Uzsprāgšanas
+TTT_KILL_SHOCK = Elektrizēšanās
+TTT_KILL_DROWN = Noslīkšanas
+TTT_KILL_NERVEGAS = Gāzes
+TTT_KILL_POISON = Indes
+TTT_KILL_RADIATION = Radiācijas
+TTT_KILL_ACID = Skābes
+
+[fr]
+TTT_NONE = AUCUN
+TTT_TRAITOR = Traitre
+TTT_DETECTIVE = Détective
+TTT_INNOCENT = Innocent
+TTT_DEAD = MORT
+TTT_SPECIAL = Traitre ou Détective
+
+TTT_MODOFF1 = Le jeu commencera dès qu'il y aura un minimum de 3 joueurs!
+TTT_MODOFF2 = Vous avez mal réglé les CVARs, il y a trop peu de joueurs! Réinitialisation des CVARs.
+TTT_TWIN = Les traitres Gagnent!
+TTT_IWIN =  Les innocent  Gagnent!
+TTT_AWARD1 = Vous avez été récompensé avec %d de crédit bonus pour avoir tué plus de %dpour cent de %L!
+TTT_AWARD2 = Vous avez été récompensé avec %d de crédit bonus pour avoir tué %L %s!
+TTT_AWARD3 = Vous avez été récompensé avec %d de crédit bonus parce que %L %s ont été trouvés morts!
+TTT_AWARD4 = Vous avez été récompensé avec %d de crédit bonus parce que vous avez survécu %d secondes!
+TTT_KILLED1 = Vous avez été tué par %s qui était %L!
+TTT_KILLED2 = Vous avez tué %s!
+TTT_KILLED3 = Vous avez tué %s qui était %L!
+TTT_SUICIDE = Vous êtes mort à cause d'un suicide, comment est-ce possible!?
+TTT_ALIVE = Vous devez être mort pour utiliser cette commande!
+TTT_DNASAMPLE1 = L’échantillon ADN de %s s'est putréfié!
+TTT_DNASAMPLE2 = Vous avez détruit l'échantillon ADN de %s!
+TTT_DNASAMPLE3 = Vous avez pris un échantillon ADN de %s!
+TTT_CANOPENCELLS = Les cellules ont été ouvertes!
+TTT_NOTOPENCELLS = Vous devez encore attendre %0.1f secondes!
+TTT_WARNING1 = En tant que %L, vous avez tué %L, pour cela vous êtes avertis +1!
+TTT_WARNING2 = Vous avez %d/%d %L, %d/%d %L et %d/%d avertissements successifs! Allez y doucement!
+TTT_PUNISHMENT1 = Vous avez été puni pour avoir tué les mauvais joueurs! Vous avez maintenant 1 karma!
+TTT_UNIDENTIFIED = [NON IDENTIFIÉ]
+TTT_DEADBODY = corps sans vie
+TTT_CALLDETECTIVE = Appelez le Détective
+TTT_CALLDETECTIVE2 = Le Détective a été appelé pour ce %L!
+TTT_CALLDETECTIVE3 = Ce %L a déjà été signalé au Détective!
+TTT_NOBODY = Ce n'est pas un %L! êtes vous sur de viser au bon endroit?
+
+TTT_INFO_LINE1 = Information du joueur à propos de la mort
+TTT_INFO_LINE2 = Il a été tué dans in <b style='color:%s'>%d:%02d</b> avec
+TTT_INFO_LINE3 = ADN actif pour <b style='color:%s'>%d</b> secondes
+
+TTT_WINNER_LINE1 = Information sur le Vainqueur
+TTT_WINNER_LINE2 = %s</b> a glissé et tombé par dessus la falaise...
+TTT_WINNER_LINE3 = %s</b> a bombardé l'endroit comme le feraient de véritables Terroristes...
+TTT_WINNER_LINE4 = <b style='color:%s'>[%L] %s</b> Fut l'assassin avec %d mises à mort!
+TTT_WINNER_LINE5 = Vous avez commencé ce round avec <b style='color:%s'>%d</b> karma, gagné <b style='color:%s'>%d</b> karma<br/> ce qui fait un total de <b style='color:%s'>%d</b> karma!
+TTT_WINNER_LINE6 = Rien! Quelle honte..
+TTT_WINNER_LINE7 = Vous avez tué:
+
+TTT_ITEM_ID0 = Bombe C4
+TTT_ITEM_ID1 = Kit de désamorçage
+TTT_ITEM_ID2 = Gilet en Kevlar
+TTT_ITEM_ID3 = Bombe du Jihad
+TTT_ITEM_ID4 = Station médicale
+TTT_ITEM_ID5 = Scanneur ADN
+TTT_ITEM_ID6 = UMP45: Prototype
+TTT_ITEM_ID7 = Déguiser
+TTT_ITEM_ID8 = Station Mortelle
+TTT_ITEM_ID10 = USP Silencieux
+TTT_ITEM_ID11 = Couteau
+TTT_ITEM_ID12 = Téléportation
+TTT_ITEM_C41 = , pour régler le minuteur appuyez sur +attack2 (bouton droit de la souris)
+TTT_ITEM_C42 = Vous pouvez acheter %s seulement après que %d secondes soit écoulée du round!
+TTT_ITEM_BACKPACK = , pour activer %s appuyer sur le bouton de la lampe torche
+TTT_ITEM_DNA = , pour activer %s appuyer sur +attack(bouton gauche de la souris)
+TTT_ITEM_TELE1 = Coordonnées \rx\w%0.1f \ry\w%0.1f \rz\w%0.1f
+TTT_ITEM_TELE2 = Vous avez réglé vos  Coordonnées sur x%0.1f y%0.1f z%0.1f!
+TTT_ITEM_TELE3 = Vous avez été téléporté vers x%0.1f y%0.1f z%0.1f!
+TTT_ITEM_TELE4 = Vous devez attendre %0.1f secondes pour téléporter à nouveau!
+TTT_ITEM1 = Un seul %s actif est autorisé en ce moment!
+TTT_ITEM2 = Vous avez acheté un %s%L!
+TTT_ITEM3 = Vous devez être %L pour acheter %s!
+TTT_ITEM4 = Vous n'avez pas assez de crédits pour acheter %s, vous avez besoin d'au moins %d!
+TTT_ITEM5 = , ça a été placé dans votre inventaire
+TTT_NOITEMSTOTAL = Il n'y a aucun article de disponible, ont-ils été désactivés!?
+TTT_NOITEMSTEAM = Il n'y a aucun article de disponible pour %Ls!
+TTT_C41 = Vous devez choisir le délai du  C4 entre %d et %d!
+TTT_C42 = Vous avez réglé votre minuteur sur %d secondes!
+TTT_HYN = Vous %savez activé %s!
+TTT_BACKPACK_NONE = Vous n'avez acheté aucun article, appuyez sur les boutons d'achat or écrivez /buy
+TTT_TOOFARCLOSE = Vous êtes en train de placer %s trop loin ou trop près de vous!
+TTT_TOOFAR = Vous utilisez %s trop loin de %L!
+TTT_DEFUSE1 = vous avez réussi à désamorcer le C4!
+TTT_DEFUSE2 = Vous avez échoué à désamorcer le C4!
+TTT_DEFUSE3 = Vous êtes trop loin pour désamorcer le C4!
+
+TTT_KILL_SUICIDE = Suicide
+TTT_KILL_GENERIC = Générique
+TTT_KILL_SLASH = Entaille
+TTT_KILL_BURN = brûlure
+TTT_KILL_FREEZE = Gel
+TTT_KILL_FALL = Chute
+TTT_KILL_BLAST = Explosion
+TTT_KILL_SHOCK = Électricité
+TTT_KILL_DROWN = Noyade
+TTT_KILL_NERVEGAS = Gaz
+TTT_KILL_POISON = Poison
+TTT_KILL_RADIATION = Radiation
+TTT_KILL_ACID = Acide
+
+[es]
+TTT_NONE = NINGUNO
+TTT_TRAITOR = Traidor
+TTT_DETECTIVE = Detective
+TTT_INNOCENT = Inocente
+TTT_DEAD = MUERTO
+TTT_SPECIAL = Traidor o Detective
+
+TTT_MODOFF1 = El juego empezara cuando haya al menos 3 jugadores!
+TTT_MODOFF2 = CVARs incorrectas, hay muy pocos jugadores! Reseteando CVARs.
+TTT_TWIN = Los Traidores Ganan!
+TTT_IWIN = Los Inocentes Ganan!
+TTT_AWARD1 = Has sido recompensado con %d creditos bonus por matar mas de %dpor ciento de %L!
+TTT_AWARD2 = Has sido recompensado con %d creditos bonus por matar %L %s!
+TTT_AWARD3 = Has sido recompensado con %d creditos bonus porque %L %s fue encontrado muerto!
+TTT_AWARD4 = Has sido recompensado con %d creditos bonus porque sobreviviste %d segundos!
+TTT_KILLED1 = Fuiste asesinado por %s que era %L!
+TTT_KILLED2 = Mataste a %s!
+TTT_KILLED3 = Mataste a %s que era %L!
+TTT_SUICIDE = Moriste por suicidio, como pudo haber pasado!?
+TTT_ALIVE = Debes estar muerto para utilizar este comando!
+TTT_DNASAMPLE1 = Muestra de ADN de %s descartada!
+TTT_DNASAMPLE2 = Destruiste la muerta de ADN de %s!
+TTT_DNASAMPLE3 = Tomaste muestra de ADN de %s!
+TTT_CANOPENCELLS = Las celdas han sido abiertas!
+TTT_NOTOPENCELLS = Debes esperar otros %0.1f segundos!
+TTT_WARNING1 = Como %L, has asesinado a %L, estas advertido +1!
+TTT_WARNING2 = Has %d/%d %L, %d/%d %L y %d/%d continuan las advertencias! Se cuidadoso!
+TTT_PUNISHMENT1 = Has sido castigado por matar jugadores incorrectos! Ahora tienes 1 karma!
+TTT_UNIDENTIFIED = [NO IDENTIFICADO]
+TTT_DEADBODY = Cuerpo muerto
+TTT_CALLDETECTIVE = Llamar Detective
+TTT_CALLDETECTIVE2 = Detective ha sido llamado a %L!
+TTT_CALLDETECTIVE3 = Este %L ya ha sido marcado por el Detective!
+TTT_NOBODY = Eso no es un %L! Estas apuntando bien??
+
+TTT_INFO_LINE1 = Info del player sobre las muertes
+TTT_INFO_LINE2 = El fue asesinado en <b style='color:%s'>%d:%02d</b> con
+TTT_INFO_LINE3 = DNA activa por <b style='color:%s'>%d</b> segundos
+
+TTT_WINNER_LINE1 = Info del ganador:
+TTT_WINNER_LINE2 = %s</b> resbalo y cayo por el precipicio...
+TTT_WINNER_LINE3 = %s</b> detono este lugar como hacen los verdaderos terroristas...
+TTT_WINNER_LINE4 = <b style='color:%s'>[%L] %s</b> was the assassin with %d kills!
+TTT_WINNER_LINE5 = Empezaste esta ronda con <b style='color:%s'>%d</b> karma, ganado <b style='color:%s'>%d</b> karma<br/> lo que hace un total de <b style='color:%s'>%d</b> karma!
+TTT_WINNER_LINE6 = nadie! Que verguenza..
+TTT_WINNER_LINE7 = Has matado a:
+
+TTT_ITEM_ID0 = Bomba c4
+TTT_ITEM_ID1 = Kit de desactivacion
+TTT_ITEM_ID2 = Chaleco Kevlar
+TTT_ITEM_ID3 = Bomba Jihad
+TTT_ITEM_ID4 = Estacion de la muerte
+TTT_ITEM_ID5 = Scaner ADN
+TTT_ITEM_ID6 = UMP45: Prototipo
+TTT_ITEM_ID7 = Camuflaje
+TTT_ITEM_ID8 = Estacion de la muerte
+TTT_ITEM_ID10 = USP Silenciosa
+TTT_ITEM_ID11 = Cuchillo
+TTT_ITEM_ID12 = Teletransportar
+TTT_ITEM_C41 = , para activar el temporizador presiona el boton +attack2(mouse2)
+TTT_ITEM_C42 = Puedes comprar %s cuando hayan pasado %d segundos o la ronda haya terminado!
+TTT_ITEM_BACKPACK = , para activar %s presiona el boton de la linterna
+TTT_ITEM_DNA = , para activar %s presiona el boton +attack(mouse1)
+TTT_ITEM_TELE1 = Coordinadas \rx\w%0.1f \ry\w%0.1f \rz\w%0.1f
+TTT_ITEM_TELE2 = Has fijado tus coodernadas a x%0.1f y%0.1f z%0.1f!
+TTT_ITEM_TELE3 = Has sido teletransportado a x%0.1f y%0.1f z%0.1f!
+TTT_ITEM_TELE4 = Debes esperar %0.1f segundos para teletransportar de nuevo!
+TTT_ITEM1 = Solo se puede activar un %s a la vez!
+TTT_ITEM2 = Has comprado %s%L!
+TTT_ITEM3 = Debes ser %L para comprar %s!
+TTT_ITEM4 = No tienes suficientes creditos para comprar %s, necesitas al menos %d!
+TTT_ITEM5 = , ha sido agregado a tu inventario
+TTT_NOITEMSTOTAL = No hay items disponibles, estan desabilitados!?
+TTT_NOITEMSTEAM = No hay items disponibles para %Ls!
+TTT_C41 = Debes elegir el tiempo de C4 entre %d y %d!
+TTT_C42 = Has configurado el timer en %d segundos!
+TTT_HYN = Has %sactivado %s!
+TTT_BACKPACK_NONE = No has comprado ningun items, presiona el boton de compra o escribe /buy
+TTT_TOOFARCLOSE = Estas poniendo %s muy lejos o muy cerca tuyo!
+TTT_TOOFAR = Estas usando %s muy lejos de %L!
+TTT_DEFUSE1 = Has defuseado C4 perfectamente!
+TTT_DEFUSE2 = Has fallado al defusear C4!
+TTT_DEFUSE3 = Estas muy lejos para defusear C4!
+
+TTT_KILL_SUICIDE = Suicidio
+TTT_KILL_GENERIC = Generico
+TTT_KILL_SLASH = Cortado
+TTT_KILL_BURN = Quemado
+TTT_KILL_FREEZE = Congelado
+TTT_KILL_FALL = Caida
+TTT_KILL_BLAST = Explosion
+TTT_KILL_SHOCK = Electricidad
+TTT_KILL_DROWN = Ahogado
+TTT_KILL_NERVEGAS = Gas
+TTT_KILL_POISON = Veneno
+TTT_KILL_RADIATION = Radiacion
+TTT_KILL_ACID = Acido
