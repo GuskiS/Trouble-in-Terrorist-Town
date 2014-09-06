@@ -194,7 +194,7 @@ stock add_to_log(type, msg[])
 	{
 		static out[TTT_LOG_SIZE], time[24];
 		get_time("%m/%d/%Y - %H:%M:%S", time, charsmax(time));
-		format(out, charsmax(out), "[TTT] %s: [%s] --- %s", time, g_szLogMessages[type], msg);
+		format(out, charsmax(out), "[TTT] %s: [%s] --- %s", time, g_szLogMessages[bit_to_int(type)], msg);
 		write_to_file(g_szFileNames[0], out);
 
 		if(type == LOG_ERROR && get_pcvar_num(cvar_logging_error))
@@ -217,4 +217,17 @@ stock write_to_file(file[], msg[])
 	}
 
 	write_file(file, msg);
+}
+
+// AKA log2(n)
+stock bit_to_int(n)
+{
+	new count;
+	while(n != 1)
+	{
+		n = n/2;
+		count++;
+	}
+
+	return count;
 }
