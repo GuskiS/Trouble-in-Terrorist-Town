@@ -327,7 +327,7 @@ public Ham_PrimaryAttack_post(knife)
 		return;
 
 	new id = get_pdata_cbase(knife, m_pPlayer, XO_WEAPON);
-	if(is_user_connected(id) && g_iKnifeType[id] == K_ON)
+	if(is_user_connected(id) && g_iKnifeType[id] == K_ON && get_user_weapon(id) == CSW_KNIFE)
 	{
 		attack_post(id, knife, get_pcvar_float(cvar_pattack_rate), get_pcvar_float(cvar_pattack_recoil));
 		clcmd_throw(id, get_pcvar_num(cvar_knife_velocity), 0);
