@@ -3,7 +3,7 @@
 #endif
 #define _ttt_const_included
 
-#define TTT_VERSION "2.4.1"
+#define TTT_VERSION "2.4.2"
 #define TTT_AUTHOR "GuskiS"
 #define TTT_TAG				"^3[^4TTT^3]^1"
 
@@ -90,7 +90,6 @@ enum _:PlayerData
 	PD_KILLEDTIME,		// Some time, get_roundtime I guess
 	PD_KILLEDSTATE,		// Killed state
 	PD_KILLEDDEATHS,	// Players death count
-	PD_KILLEDDISTANCE,	// Distance from killer to victim
 	PD_KILLCOUNT,		// Players kill count
 	PD_IDENTIFIED,		// Is he identified?
 	PD_KARMA,			// Players karma, the one used in damge calculations
@@ -100,7 +99,6 @@ enum _:PlayerData
 	PD_C4EXPLODED,		// Did he explode C4 :O
 	PD_SCOREBOARD,		// Holds info about scoreboard (1 means cant change)
 	PD_PLAYERSTATE,		// Why the fuck is this last one? ;o
-	PD_TEAM,			// Team for equal damage
 	PD_KILLEDBYITEM     // If killed by item, stores that item ID
 }
 

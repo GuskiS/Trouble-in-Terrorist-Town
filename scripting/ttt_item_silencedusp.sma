@@ -16,7 +16,7 @@
 
 new g_iItemID;
 new const g_szModels[][] = {"models/ttt/v_silencedusp.mdl", "models/ttt/p_silencedusp.mdl", "models/ttt/w_silencedusp.mdl"};
-new Array:g_aModels, cvar_weapon_damage, cvar_weapon_speed, cvar_weapon_ammo, cvar_weapon_clip, cvar_weapon_price, g_iKilledWith[33];
+new Array:g_aModels, cvar_weapon_damage, cvar_weapon_speed, cvar_weapon_ammo, cvar_weapon_clip, cvar_weapon_price;
 
 public plugin_precache()
 {
@@ -77,17 +77,6 @@ public plugin_init()
 	g_iItemID = ttt_buymenu_add(name, get_pcvar_num(cvar_weapon_price), TRAITOR);
 }
 
-public plugin_natives()
-{
-	register_library("ttt");
-	register_native("ttt_is_usp_kill", "_is_usp_kill");
-}
-
-public client_disconnect(id)
-{
-	g_iKilledWith[id] = false;
-}
-
 public ttt_item_selected(id, item, name[], price)
 {
 	if(g_iItemID == item)
@@ -122,26 +111,6 @@ public ttt_item_selected(id, item, name[], price)
 	return PLUGIN_CONTINUE;
 }
 
-public ttt_gamemode(gamemode)
-{
-	if(gamemode == PREPARING || gamemode == RESTARTING)
-	{
-		new num;
-		static players[32];
-		get_players(players, num);
-		for(--num; num >= 0; num--)
-			g_iKilledWith[players[num]] = false;
-	}
-}
-
-public cswa_killed(ent, victim, killer)
-{
-	if(get_weapon_edict(ent, REPL_CSWA_SET) == 2)
-	{
-		g_iKilledWith[victim] = true;
-	}
-}
-
 public Ham_SecondaryAttack_pre(ent)
 {
 	if(!is_valid_ent(ent))
@@ -159,14 +128,4 @@ public Ham_SecondaryAttack_pre(ent)
 	}
 
 	return HAM_IGNORED;
-}
-
-// API
-public _is_usp_kill(plugin, params)
-{
-	new id = get_param(1);
-	if(params != 1 || is_user_alive(id))
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params or user alive (ttt_is_usp_kill)");
-
-	return g_iKilledWith[id];
 }

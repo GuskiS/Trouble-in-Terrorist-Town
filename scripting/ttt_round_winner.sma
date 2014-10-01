@@ -10,7 +10,7 @@
 #define TASK_ROUNDEND 1111
 
 new g_iWonGame;
-new g_iWonScore[Special], g_iWonForward, cvar_karma_win;
+new g_iWonScore[Special], g_pWonForward, cvar_karma_win;
 
 new g_szWinSounds[3][TTT_MAXFILELENGHT];
 new const g_szWinner[][] =
@@ -47,8 +47,7 @@ public plugin_init()
 
 	RegisterHam(Ham_Spawn, "player", "Ham_Spawn_post", 1, true);
 	RegisterHam(Ham_Killed, "player", "Ham_Killed_post", 1, true);
-	g_iWonForward = CreateMultiForward("ttt_winner", ET_IGNORE, FP_CELL);
-	//register_clcmd("say rr", "End_Round_False");
+	g_pWonForward = CreateMultiForward("ttt_winner", ET_IGNORE, FP_CELL);
 }
 
 public plugin_natives()
@@ -74,7 +73,7 @@ public ttt_gamemode(gamemode)
 		case PREPARING: set_task(floatmul(get_pcvar_float(get_cvar_pointer("mp_roundtime")), 60.0) + get_pcvar_float(get_cvar_pointer("ttt_preparation_time")), "End_Round_False", TASK_ROUNDEND);
 	}
 
-	set_task(0.2, "Update_Scores");
+	// set_task(0.2, "Update_Scores");
 }
 
 public client_disconnect(id)
@@ -107,13 +106,13 @@ public client_putinserver(id)
 
 public Ham_Spawn_post(id)
 {
-	if(ttt_get_game_state() == PREPARING && is_user_alive(id))
+	if(is_user_alive(id) && ttt_get_game_state() == PREPARING)
 		set_user_godmode(id, 1);
 }
 
 public Ham_Killed_post(victim, killer)
 {
-	if(ttt_get_special_alive(victim) == TRAITOR && ttt_get_special_count(TRAITOR) == 0)
+	if(ttt_get_special_count(TRAITOR) == 0 && ttt_get_special_alive(victim) == TRAITOR)
 	{
 		new bomb = -1, count;
 		while((bomb = find_ent_by_model(-1, "grenade", "models/w_c4.mdl")) != 0)
@@ -131,7 +130,8 @@ public Ham_Killed_post(victim, killer)
 
 public End_Round_False()
 {
-	if(ttt_get_game_state() == STARTED || ttt_get_game_state() == OFF || ttt_get_game_state() == UNSET)
+	new mode = ttt_get_game_state();
+	if(mode == STARTED || mode == OFF || mode == UNSET)
 		TerminateRound(RoundEndType_TeamExtermination, DETECTIVE, MapType_Bomb);
 }
 
@@ -173,7 +173,7 @@ public get_winner(type)
 
 public Message_Winner(msgid, dest, id)
 {
-	if(ttt_get_game_state() != STARTED || g_iWonGame)
+	if(g_iWonGame && ttt_get_game_state() != STARTED)
 		return PLUGIN_CONTINUE;
 
 	static message[20];
@@ -198,14 +198,11 @@ public Message_Winner(msgid, dest, id)
 			formatex(out, charsmax(out), "%L", LANG_PLAYER, g_szWinner[g_iWonGame]);
 			set_msg_arg_string(2, out);
 			client_cmd(0, "spk ^"%s^"", g_szWinSounds[g_iWonGame]);
-			//emit_sound(0, CHAN_AUTO, g_szWinSounds[g_iWonGame], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-	
-			//remove_entity_name("grenade"); crash
-			move_grenade();
+
 			new ret;
-			ExecuteForward(g_iWonForward, ret, g_iWonGame);
-			//ttt_set_game_state(ENDED);
-			
+			move_grenade();
+			ExecuteForward(g_pWonForward, ret, g_iWonGame);
+
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -231,9 +228,7 @@ public Update_Scores()
 }
 
 public _get_winner()
-{
 	return g_iWonGame;
-}
 
 public _set_winner(plugin, params)
 {
@@ -245,8 +240,5 @@ public _set_winner(plugin, params)
 		return ttt_log_to_file(LOG_ERROR, "Team isn't Traitor or Detective (ttt_set_winner)");
 
 	TerminateRound(RoundEndType_TeamExtermination, team);
-	//static name[32];
-	//get_plugin(get_param(0),_, _, name, charsmax(name));
-	//log_amx("%d CALL %s",get_param(3), name);
 	return 1;
 }

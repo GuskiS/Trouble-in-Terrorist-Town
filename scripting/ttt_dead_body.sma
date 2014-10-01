@@ -7,8 +7,7 @@
 
 enum (+= 1111)
 {
-	TASK_OBJECTCAPS = 1111,
-	TASK_VICTIM
+	TASK_VICTIM = 1111
 }
 
 new g_iRoundSpecial[Special];
@@ -47,26 +46,21 @@ public client_disconnect(id)
 
 public Ham_Killed_pre(victim, killer, shouldgib)
 {
-	if(ttt_return_check(victim))
+	if(!is_user_connected(killer) || ttt_return_check(victim))
 		return HAM_IGNORED;
 
-	if(is_user_connected(killer))
-	{
-		new Float:distance = entity_range(killer, victim);
-		if(distance > 2399.0)
-			distance = 2399.0;
-		ttt_set_playerdata(victim, PD_KILLEDDISTANCE, floatround(distance));
-		new timer = floatround((2400.0-distance)*(0.05));
+	new Float:distance = entity_range(killer, victim);
+	if(distance > 2399.0)
+		distance = 2399.0;
+	new timer = floatround((2400.0-distance)*(0.05));
 
-		g_iBodyInfo[victim][BODY_TIME] = timer;
-		g_iBodyInfo[victim][BODY_KILLER] = killer;
-		g_iBodyInfo[victim][BODY_TRACER] = 0;
-		g_iBodyInfo[victim][BODY_ACTIVE] = true;
-		g_iBodyInfo[victim][BODY_CALLD] = 0;
+	g_iBodyInfo[victim][BODY_TIME] = timer;
+	g_iBodyInfo[victim][BODY_KILLER] = killer;
+	g_iBodyInfo[victim][BODY_TRACER] = 0;
+	g_iBodyInfo[victim][BODY_ACTIVE] = true;
+	g_iBodyInfo[victim][BODY_CALLD] = 0;
 
-		set_task(1.0, "reduce_time", TASK_VICTIM+victim, _, _, "b", timer);
-	}
-
+	set_task(1.0, "reduce_time", TASK_VICTIM+victim, _, _, "b", timer);
 	return HAM_HANDLED;
 }
 
@@ -105,13 +99,13 @@ public ttt_gamemode(gamemode)
 
 public reset_all(id)
 {
-	for(new i = 0; i < sizeof(g_iBodyInfo[]); i++)
+	for(new i = 0; i < BodyData; i++)
 		g_iBodyInfo[id][i] = 0;
 }
 
 public round_specials()
 {
-	for(new i = 0; i <= charsmax(g_iRoundSpecial); i++)
+	for(new i = 0; i < Special; i++)
 		g_iRoundSpecial[i] = ttt_get_special_count(i);
 }
 
@@ -242,10 +236,7 @@ public _get_bodydata(plugin, params)
 	if(params != 2)
 		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_bodydata)")-1;
 
-	new body = get_param(1);
-	new datatype = get_param(2);
-
-	return g_iBodyInfo[body][datatype];
+	return g_iBodyInfo[get_param(1)][get_param(2)];
 }
 
 public _set_bodydata(plugin, params)
@@ -253,12 +244,7 @@ public _set_bodydata(plugin, params)
 	if(params != 3)
 		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_bodydata)");
 
-	new body = get_param(1);
-	new datatype = get_param(2);
-	new newdata = get_param(3);
-
-	g_iBodyInfo[body][datatype] = newdata;
-
+	g_iBodyInfo[get_param(1)][get_param(2)] = get_param(3);
 	return 1;
 }
 

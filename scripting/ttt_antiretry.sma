@@ -8,7 +8,7 @@
 #define m_bitsDamageType 	76
 
 new Handle:g_pSqlTuple, pluginon;
-new g_szError[512], g_szUserIP[33][20];
+new g_szUserIP[33][20];
 new g_iWarnings[33][3], g_iUserBanned[33], g_iUserPunish[33], g_iBadAim[33]; // 0 = special, 1 = innocent, 2 = continued
 new cvar_ar_warnings_innocent, cvar_ar_warnings_special, cvar_ar_warnings_punishment, cvar_ar_warnings_bantime,
 	cvar_ar_on, cvar_ar_warnings_continued, cvar_ar_warnings_players, cvar_ar_warnings_blind_time;
@@ -79,7 +79,7 @@ public client_disconnect(id)
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == RESTARTING && pluginon)
+	if(pluginon && gamemode == RESTARTING)
 	{
 		table_clear();
 		new num, id;
@@ -111,9 +111,9 @@ public Ham_Spawn_pre(id)
 
 public Ham_Killed_post(victim, killer, shouldgib)
 {
-	if(!is_user_alive(killer) || ttt_return_check(victim)|| ttt_get_playerdata(victim, PD_KILLEDBYITEM) > -1 || killer == victim
-	|| (get_pdata_int(victim, m_bitsDamageType, 5) & DMG_BLAST) || !pluginon)
-		return HAM_IGNORED;
+	if(!is_user_alive(killer) || killer == victim || (get_pdata_int(victim, m_bitsDamageType, 5) & DMG_BLAST)
+		|| !pluginon || ttt_return_check(victim) || ttt_get_playerdata(victim, PD_KILLEDBYITEM) > -1)
+		return;
 
 	new state_killer = ttt_get_special_state(killer), state_victim = ttt_get_playerdata(victim, PD_KILLEDSTATE);
 	if(state_killer == TRAITOR && state_victim == TRAITOR)
@@ -123,16 +123,11 @@ public Ham_Killed_post(victim, killer, shouldgib)
 	else if((state_killer == INNOCENT && state_victim == INNOCENT) || (state_killer == DETECTIVE && state_victim == INNOCENT))
 		add_warnings(killer, state_killer, state_victim, 1);
 	else g_iWarnings[killer][2] = 0;
-
-	return HAM_HANDLED;
 }
 
 public Forward_TraceLine_post(Float:v1[3], Float:v2[3], noMonsters, id)
 {
-	if(!is_user_alive(id))
-		return FMRES_IGNORED;
-
-	if(!g_iBadAim[id])
+	if(!is_user_alive(id) || !g_iBadAim[id])
 		return FMRES_IGNORED;
 
 	new target = get_tr(TR_pHit);
@@ -159,16 +154,17 @@ public MySQL_Init()
 
 	g_pSqlTuple = SQL_MakeDbTuple(host, user, pass, db);
 
-	new errorCode, Handle:SqlConnection = SQL_Connect(g_pSqlTuple, errorCode, g_szError, charsmax(g_szError));
+	static error[128];
+	new errorCode, Handle:SqlConnection = SQL_Connect(g_pSqlTuple, errorCode, error, charsmax(error));
 	if(SqlConnection == Empty_Handle)
-		set_fail_state(g_szError);
+		set_fail_state(error);
 
 	new Handle:queries = SQL_PrepareQuery(SqlConnection, "CREATE TABLE IF NOT EXISTS ttt_antiretry (id int(8) unsigned NOT NULL auto_increment, ip varchar(20) UNIQUE NOT NULL default '', karma int(8), warnings_s int(3), warnings_i int(3), punish int(3), PRIMARY KEY (id))");
 
 	if(!SQL_Execute(queries))
 	{
-		SQL_QueryError(queries, g_szError, charsmax(g_szError));
-		set_fail_state(g_szError);
+		SQL_QueryError(queries, error, charsmax(error));
+		set_fail_state(error);
 	}
 
 	SQL_FreeHandle(queries);
@@ -183,8 +179,8 @@ public MySQL_Load(id)
 	static data[2];
 	data[0] = id;
 
-	static temp[512];
-	format(temp, charsmax(temp), "SELECT * FROM ttt_antiretry WHERE ip = '%s'", g_szUserIP[id]);
+	static temp[96];
+	formatex(temp, charsmax(temp), "SELECT * FROM ttt_antiretry WHERE ip = '%s'", g_szUserIP[id]);
 	SQL_ThreadQuery(g_pSqlTuple, "register_client", temp, data, 1);
 }
 
@@ -193,10 +189,10 @@ public MySQL_Save(id)
 	if(!is_user_connected(id))
 		return;
 
-	static temp[512];
+	static temp[192];
 	if(g_iUserBanned[id])
-		format(temp, charsmax(temp), "UPDATE ttt_antiretry SET karma = '500', warnings_s = '0', warnings_i = '0', punish = '0' WHERE ip = '%s'", g_szUserIP[id]);
-	else format(temp, charsmax(temp), "UPDATE ttt_antiretry SET karma = '%d', warnings_s = '%d', warnings_i = '%d', punish = '%d' WHERE ip = '%s'", ttt_get_playerdata(id, PD_KARMATEMP), g_iWarnings[id][0], g_iWarnings[id][1], g_iUserPunish[id], g_szUserIP[id]);
+		formatex(temp, charsmax(temp), "UPDATE ttt_antiretry SET karma = '500', warnings_s = '0', warnings_i = '0', punish = '0' WHERE ip = '%s'", g_szUserIP[id]);
+	else formatex(temp, charsmax(temp), "UPDATE ttt_antiretry SET karma = '%d', warnings_s = '%d', warnings_i = '%d', punish = '%d' WHERE ip = '%s'", ttt_get_playerdata(id, PD_KARMATEMP), g_iWarnings[id][0], g_iWarnings[id][1], g_iUserPunish[id], g_szUserIP[id]);
 
 	SQL_ThreadQuery(g_pSqlTuple, "IgnoreHandle", temp);
 }
@@ -217,7 +213,7 @@ public register_client(failstate, Handle:query, error[], errcode, data[], datasi
 		new karma = SQL_ReadResult(query, 2);
 		new warnings_s = SQL_ReadResult(query, 3);
 		new warnings_i = SQL_ReadResult(query, 4);
-		new punish = SQL_ReadResult(query, 4);
+		new punish = SQL_ReadResult(query, 5);
 
 		if(karma > 0)
 		{
@@ -257,7 +253,7 @@ public add_warnings(killer, state_killer, state_victim, type)
 	else g_iWarnings[killer][0]++;
 	g_iWarnings[killer][2]++;
 
-	ttt_set_player_stat(killer, STATS_RDM, ttt_get_player_stat(killer, STATS_RDM)+1);
+	ttt_set_stats(killer, STATS_RDM, ttt_get_player_stat(killer, STATS_RDM)+1);
 	new special = get_pcvar_num(cvar_ar_warnings_special), innocent = get_pcvar_num(cvar_ar_warnings_innocent), continued = get_pcvar_num(cvar_ar_warnings_continued);
 
 	if(g_iWarnings[killer][0] >= special || g_iWarnings[killer][1] >= innocent || g_iWarnings[killer][2] >= continued)
@@ -280,6 +276,9 @@ public check_warnings(id)
 
 public punish_player(id)
 {
+	if(!is_user_connected(id))
+		return;
+
 	static cvar[10];
 	get_pcvar_string(cvar_ar_warnings_punishment, cvar, charsmax(cvar));
 	if(!cvar[0])
@@ -297,11 +296,8 @@ public punish_player(id)
 
 	new flags = read_flags(cvar);
 	static const size = sizeof(punishments);
-	for(new i; i < size; i++)
+	for(new i = 0; i < size; i++)
 	{
-		if(!is_user_connected(id))
-			break;
-
 		if(flags & punishments[i])
 			pick_punishment(id, i);
 	}
@@ -336,6 +332,7 @@ stock set_user_badaim(id)
 {
 	if(task_exists(id))
 		remove_task(id);
+
 	g_iBadAim[id] = 0;
 	client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_PUNISHMENT3");
 	set_task(10.0, "randomize_hitzones", id, _, _, "b");
@@ -384,15 +381,15 @@ stock reset_client(id)
 
 stock table_clear()
 {
-	static temp[512];
-	format(temp, charsmax(temp), "TRUNCATE TABLE ttt_antiretry");
+	static temp[32];
+	formatex(temp, charsmax(temp), "TRUNCATE TABLE ttt_antiretry");
 	SQL_ThreadQuery(g_pSqlTuple, "IgnoreHandle", temp);
 }
 
 stock table_insert(id)
 {
-	static temp[512];
-	format(temp, charsmax(temp), "INSERT INTO ttt_antiretry (ip, karma, warnings_s, warnings_i, punish) VALUES ('%s', '%d', '%d', '%d', '%d');", g_szUserIP[id], ttt_get_playerdata(id, PD_KARMATEMP), g_iWarnings[id][0], g_iWarnings[id][1], g_iUserPunish[id]);
+	static temp[192];
+	formatex(temp, charsmax(temp), "INSERT INTO ttt_antiretry (ip, karma, warnings_s, warnings_i, punish) VALUES ('%s', '%d', '%d', '%d', '%d');", g_szUserIP[id], ttt_get_playerdata(id, PD_KARMATEMP), g_iWarnings[id][0], g_iWarnings[id][1], g_iUserPunish[id]);
 	SQL_ThreadQuery(g_pSqlTuple, "IgnoreHandle", temp);
 }
 

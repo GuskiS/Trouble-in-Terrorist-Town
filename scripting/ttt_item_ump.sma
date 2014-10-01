@@ -107,7 +107,7 @@ public ttt_item_selected(id, item, name[], price)
 
 public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage)
 {
-	if(!ttt_return_check(attacker) && is_user_alive(inflictor) && attacker == inflictor && get_user_weapon(inflictor) == CSW_WEAPON)
+	if(is_user_alive(inflictor) && attacker == inflictor && get_user_weapon(inflictor) == CSW_WEAPON && !ttt_return_check(attacker))
 	{
 		new ent = find_ent_by_owner(-1, WEAPON_NAME, inflictor);
 		if(get_weapon_edict(ent, REPL_CSWA_SET) == 2 && get_weapon_edict(ent, REPL_CSWA_ITEMID) == g_iItemID)

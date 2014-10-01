@@ -3,7 +3,7 @@
 #include <cstrike>
 #include <ttt>
 
-new killed_names[33][256], g_iCached[2];
+new g_iCached[2], g_iKilledWho[33][33];
 new const g_szIconNames[][] = 
 {
 	"suicide", "p228", "", "scout", "hegrenade", "xm1014", "c4", "mac10", "aug", "hegrenade", "elite", "fiveseven",
@@ -11,7 +11,7 @@ new const g_szIconNames[][] =
 	"deagle", "sg552", "ak47", "crowbar", "p90", "0", "1", "2", "3"
 };
 
-new const g_sColors[][] = 
+new const g_szColors[][] = 
 {
 	"#848284", // grey
 	"#fc0204", // red
@@ -26,8 +26,7 @@ public plugin_precache()
 	static icon[32];
 	for(new i = 0; i <= charsmax(g_szIconNames); i++)
 	{
-		if(i < 5)
-			if(strlen(g_szIconNames[i]) < 3) continue;
+		if(i < 5 && strlen(g_szIconNames[i]) < 3) continue;
 		formatex(icon, charsmax(icon), "gfx/ttt/%s.gif", g_szIconNames[i]);
 		precache_generic(icon);
 	}
@@ -53,8 +52,20 @@ public ttt_gamemode(gamemode)
 		for(--num; num >= 0; num--)
 		{
 			id = players[num];
-			killed_names[id][0] = EOS;
+			reset_player(id);
 		}
+	}
+}
+
+stock reset_player(id)
+{
+	new num, player;
+	static players[32];
+	get_players(players, num);
+	for(--num; num >= 0; num--)
+	{
+		player = players[num];
+		g_iKilledWho[id][player] = false;
 	}
 }
 
@@ -68,14 +79,17 @@ public ttt_winner(team)
 	{
 		id = players[num];
 		client_cmd(id, "-attack");
+		client_cmd(id, "-attack2");
 		show_motd_winner(id);
-		killed_names[id][0] = EOS;
 	}
 }
 
 public ttt_showinfo(id, target)
-	if(!is_user_alive(target) && is_user_alive(id) && ttt_get_game_state() != ENDED && ttt_get_game_state() != OFF)
+{
+	new mode = ttt_get_game_state(); 
+	if(!is_user_alive(target) && is_user_alive(id) &&  mode != ENDED && mode != OFF)
 		show_motd_info(id, target);
+}
 
 public ttt_show_me(id)
 {
@@ -84,19 +98,27 @@ public ttt_show_me(id)
 
 	if(!is_user_alive(id))
 	{
-		static names[256];
-		copy(names, charsmax(names), killed_names[id]);
-
-		if(strlen(names) > 2)
-			names[strlen(names)-2] = '^0';
-		else formatex(names, charsmax(names), "%L", id, "TTT_WINNER_LINE6");
-
 		const SIZE = 1536;
 		static msg[SIZE+1];
 		new len;
 
 		len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top;}</style></head><body>");
-		len += formatex(msg[len], SIZE - len, "</br><center><h2>%L %s</h2></center>", id, "TTT_WINNER_LINE7", names);
+		len += formatex(msg[len], SIZE - len, "</br><center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
+
+		new num, player, count;
+		static players[32];
+		get_players(players, num);
+		for(--num; num >= 0; num--)
+		{
+			player = players[num];
+			if(g_iKilledWho[id][player])
+			{
+				count++;
+				len += formatex(msg[len], SIZE - len, "[%L] %n</br>", id, special_names[ttt_get_special_alive(player)], player);
+			}
+		}
+
+		if(!count) len += formatex(msg[len], SIZE - len, "%L", id, "TTT_WINNER_LINE6");
 		len += formatex(msg[len], SIZE - len, "</body></html>");
 
 		show_motd(id, msg, "");
@@ -109,10 +131,7 @@ public Ham_Killed_pre(victim, killer, shouldgib)
 	if(!is_user_connected(victim) || !is_user_connected(killer) || ttt_get_game_state() == ENDED)
 		return HAM_IGNORED;
 
-	static name[32];
-	get_user_name(victim, name, charsmax(name));
-	format(killed_names[killer], charsmax(killed_names[]), "[%L] %s, %s", killer, special_names[ttt_get_playerdata(victim, PD_KILLEDSTATE)], name, killed_names[killer]);
-	
+	g_iKilledWho[killer][victim] = true;
 	return HAM_HANDLED;
 }
 
@@ -156,7 +175,7 @@ public show_motd_winner(id)
 				else zum = killedstate;
 
 				highest = ttt_get_playerdata(i, PD_KILLCOUNT);
-				formatex(kills, charsmax(kills), "%L", LANG_SERVER, "TTT_WINNER_LINE4", g_sColors[zum], LANG_SERVER, special_names[zum], name, highest);
+				formatex(kills, charsmax(kills), "%L", LANG_SERVER, "TTT_WINNER_LINE4", g_szColors[zum], LANG_SERVER, special_names[zum], name, highest);
 			}
 		}
 
@@ -185,17 +204,17 @@ public show_motd_winner(id)
 		len += formatex(msg[len], SIZE - len, "</br><center><h1>%s</h1></center>", out);
 
 		if(strlen(Detectives) > 0)
-			len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L: %s</b><br/>", g_sColors[DETECTIVE], LANG_SERVER, special_names[DETECTIVE], Detectives);
-		len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L: %s</b><br/><br/>", g_sColors[TRAITOR], LANG_SERVER, special_names[TRAITOR], Traitors);
+			len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L: %s</b><br/>", g_szColors[DETECTIVE], LANG_SERVER, special_names[DETECTIVE], Detectives);
+		len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L: %s</b><br/><br/>", g_szColors[TRAITOR], LANG_SERVER, special_names[TRAITOR], Traitors);
 
 		if(strlen(kills) > 0)
 			len += formatex(msg[len], SIZE - len, "%s<br/>", kills);
 
 		if(strlen(suicide) > 0)
-			len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L<br/>", g_sColors[SPECIAL], LANG_SERVER, "TTT_WINNER_LINE2", suicide);
+			len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L<br/>", g_szColors[SPECIAL], LANG_SERVER, "TTT_WINNER_LINE2", suicide);
 
 		if(strlen(c4) > 0)
-			len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L<br/>", g_sColors[SPECIAL], LANG_SERVER, "TTT_WINNER_LINE3", c4);
+			len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L<br/>", g_szColors[SPECIAL], LANG_SERVER, "TTT_WINNER_LINE3", c4);
 
 		formatex(motdname, charsmax(motdname), "%L", LANG_SERVER, "TTT_WINNER_LINE1");
 		g_iCached[0] = true;
@@ -203,14 +222,26 @@ public show_motd_winner(id)
 	}
 	len = staticsize;
 	formatex(wholemsg, charsmax(msg), "%s", msg);
-	if(strlen(killed_names[id]) > 2)
-		killed_names[id][strlen(killed_names[id])-2] = '^0';
-	else formatex(killed_names[id], charsmax(killed_names[]), "%L", LANG_SERVER, "TTT_WINNER_LINE6");
-	len += formatex(wholemsg[len], SIZE - len, "%L %s</br>", LANG_SERVER, "TTT_WINNER_LINE7", killed_names[id]);
+
+	len += formatex(wholemsg[len], SIZE - len, "%L</br>", LANG_SERVER, "TTT_WINNER_LINE7");
+	new num, player, count;
+	static players[32];
+	get_players(players, num);
+	for(--num; num >= 0; num--)
+	{
+		player = players[num];
+		if(g_iKilledWho[id][player])
+		{
+			count++;
+			len += formatex(wholemsg[len], SIZE - len, "%L [%L] %n</br>", LANG_SERVER, "TTT_WINNER_LINE7", LANG_SERVER, special_names[ttt_get_special_alive(player)], player);
+		}
+	}
+
+	if(!count) formatex(wholemsg[len], SIZE - len, "%L", id, "TTT_WINNER_LINE6");
 	
 	new karma = ttt_get_playerdata(id, PD_KARMA), karmatemp = ttt_get_playerdata(id, PD_KARMATEMP);
 	zum = ttt_get_special_alive(id);
-	len += formatex(wholemsg[len], SIZE - len, "%L<br/>", LANG_SERVER, "TTT_WINNER_LINE5", g_sColors[zum], karma, g_sColors[zum], karmatemp-karma, g_sColors[zum], karmatemp);
+	len += formatex(wholemsg[len], SIZE - len, "%L<br/>", LANG_SERVER, "TTT_WINNER_LINE5", g_szColors[zum], karma, g_szColors[zum], karmatemp-karma, g_szColors[zum], karmatemp);
 	len += formatex(wholemsg[len], SIZE - len, "</body></html>");
 
 	show_motd(id, wholemsg, motdname);
@@ -233,8 +264,8 @@ public show_motd_info(id, target)
 
 	len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('gfx/ttt/%d.gif') no-repeat center top;}</style></head><body>", killedstate);
 	len += formatex(msg[len], SIZE - len, "</br><center><h1>%L %s</h1>", id, special_names[killedstate], name);
-	len += formatex(msg[len], SIZE - len, "<h1>%L</h1>", id, "TTT_INFO_LINE3", g_sColors[killedstate], ttt_get_bodydata(target, BODY_TIME));
-	len += formatex(msg[len], SIZE - len, "%L <img src='gfx/ttt/%s.gif'></center>", id, "TTT_INFO_LINE2", g_sColors[killedstate], minutes, seconds, killmsg);
+	len += formatex(msg[len], SIZE - len, "<h1>%L</h1>", id, "TTT_INFO_LINE3", g_szColors[killedstate], ttt_get_bodydata(target, BODY_TIME));
+	len += formatex(msg[len], SIZE - len, "%L <img src='gfx/ttt/%s.gif'></center>", id, "TTT_INFO_LINE2", g_szColors[killedstate], minutes, seconds, killmsg);
 	len += formatex(msg[len], SIZE - len, "</body></html>");
 	formatex(motdname, charsmax(motdname), "%L", id, "TTT_INFO_LINE1");
 

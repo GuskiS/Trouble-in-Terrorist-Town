@@ -23,9 +23,8 @@ public plugin_natives()
 
 public client_disconnect(id)
 {
-	new i;
 	g_iTotalItems[id] = 0;
-	for(i = 0; i < charsmax(g_iPlayerItems[]); i++)
+	for(new i = 0; i < TTT_TOTAL_BACKPACK; i++)
 	{
 		g_iPlayerItems[id][i] = -1;
 		g_iItemData[id][i][0] = EOS;
@@ -55,7 +54,7 @@ public ttt_gamemode(gamemode)
 		{
 			id = players[num];
 			g_iTotalItems[id] = 0;
-			for(i = 0; i < sizeof(g_iPlayerItems[]); i++)
+			for(i = 0; i < TTT_TOTAL_BACKPACK; i++)
 			{
 				g_iPlayerItems[id][i] = -1;
 				g_iItemData[id][i][0] = EOS;
@@ -66,7 +65,7 @@ public ttt_gamemode(gamemode)
 
 public ttt_backpack_showup(id)
 {
-	if(ttt_return_check(id) || !is_user_alive(id))
+	if(!is_user_alive(id) || ttt_return_check(id))
 		return PLUGIN_HANDLED;
 
 	if(!g_iTotalItems[id])
@@ -75,30 +74,25 @@ public ttt_backpack_showup(id)
 		return PLUGIN_HANDLED;
 	}
 
-	new i, set;
 	static item[128], num[3];
-	new iMenu = menu_create("\rBackpack", "ttt_backpack_handle");
+	new menu = menu_create("\rBackpack", "ttt_backpack_handle");
 
-	for(i = 0; i < charsmax(g_iPlayerItems[]); i++)
+	for(new i = 0; i < TTT_TOTAL_BACKPACK; i++)
     {
 		if(g_iPlayerItems[id][i] == -1) continue;
 		formatex(item, charsmax(item), "%s\R\y                                                    ", g_iItemData[id][i]);
 
-		num_to_str(set, num, charsmax(num));
-		menu_additem(iMenu, item, num);
-		set++;
+		num_to_str(i, num, charsmax(num));
+		menu_additem(menu, item, num);
     }
 
-	menu_display(id, iMenu, 0);
+	menu_display(id, menu, 0);
 	return PLUGIN_HANDLED;
 }
 
 public ttt_backpack_handle(id, menu, item)
 {
-	if(ttt_return_check(id) || !is_user_alive(id))
-		return PLUGIN_HANDLED;
-
-	if(item == MENU_EXIT)
+	if(item == MENU_EXIT || !is_user_alive(id) || ttt_return_check(id))
 	{
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
@@ -133,23 +127,21 @@ public ttt_backpack_handle(id, menu, item)
 
 public _backpack_add(plugin, param)
 {
-	new id = get_param(1), index, i;
+	new id = get_param(1);
 	if(is_user_alive(id))
 	{
-		for(i = 0; i <= g_iTotalItems[id]; i++)
+		new item_id;
+		for(item_id = 0; item_id <= g_iTotalItems[id]; item_id++)
 		{
-			if(g_iPlayerItems[id][i] == -1)
-			{
-				index = i;
+			if(g_iPlayerItems[id][item_id] == -1)
 				break;
-			}
 		}
 
 		g_iTotalItems[id]++;
-		g_iPlayerItems[id][index] = index;
-		get_string(2, g_iItemData[id][index], charsmax(g_iItemData[][]));
+		g_iPlayerItems[id][item_id] = item_id;
+		get_string(2, g_iItemData[id][item_id], charsmax(g_iItemData[][]));
 
-		return index;
+		return item_id;
 	}
 
 	return -1;
@@ -157,14 +149,15 @@ public _backpack_add(plugin, param)
 
 public _backpack_remove(plugin, param)
 {
-	new id = get_param(1), index = get_param(2);
-	if(index > -1)
+	new item = get_param(2);
+	if(item > -1)
 	{
+		new id = get_param(1);
 		if(is_user_connected(id))
 		{
 			g_iTotalItems[id]--;
-			g_iPlayerItems[id][index] = -1;
-			g_iItemData[id][index][0] = EOS;
+			g_iPlayerItems[id][item] = -1;
+			g_iItemData[id][item][0] = EOS;
 
 			return -1;
 		}

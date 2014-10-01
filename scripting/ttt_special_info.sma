@@ -71,7 +71,7 @@ public ttt_spawnbody(owner, ent)
 
 public client_PreThink(id)
 {
-	if(ttt_return_check(id) || !is_user_alive(id) || g_fShowTime[id] > get_gametime())
+	if(!is_user_alive(id) || g_fShowTime[id] > get_gametime() || ttt_return_check(id))
 		return;
     
 	static Float:fOrigin[2][3], origin[3];
@@ -153,14 +153,15 @@ public client_PreThink(id)
 
 public Event_StatusValue_S(id)
 {
-	if(!is_user_connected(id) || ttt_get_game_state() == ENDED)
+	if(!is_user_connected(id))
 		return;
 
-	static name[32];
-	new message[128];
+	new mode = ttt_get_game_state();
+	if(mode == ENDED)
+		return;
+
+	static message[128];
 	new pid = read_data(2);
-	get_user_name(pid, name, charsmax(name));
-	new R, G, B;
 
 	new pidState = ttt_get_special_state(pid), idState = ttt_get_special_state(id), useState;
 	if(pidState == DETECTIVE)
@@ -169,17 +170,17 @@ public Event_StatusValue_S(id)
 		useState = TRAITOR;
 	else useState = INNOCENT;
 
-	R = g_iTeamColors[useState][0];
-	G = g_iTeamColors[useState][1];
-	B = g_iTeamColors[useState][2];
+	new R = g_iTeamColors[useState][0];
+	new G = g_iTeamColors[useState][1];
+	new B = g_iTeamColors[useState][2];
 
 	new karma = ttt_get_playerdata(pid, PD_KARMA);
 	set_hudmessage(R, G, B, -1.0, 0.60, 1, 0.01, 3.0, 0.01, 0.01, -1);
 	remove_special_sprite(id, g_iActiveTarget[id]);
 
 	if(get_pcvar_num(cvar_show_health))
-		formatex(message, charsmax(message), "%s -- [Karma = %d] [HP = %d]", name, karma, get_user_health(pid));
-	else formatex(message, charsmax(message), "%s -- [Karma = %d]", name, karma);
+		formatex(message, charsmax(message), "%n -- [Karma = %d] [HP = %d]", pid, karma, get_user_health(pid));
+	else formatex(message, charsmax(message), "%n -- [Karma = %d]", pid, karma);
 
 	if((idState == INNOCENT || idState == DETECTIVE) && pidState != DETECTIVE)
 	{
@@ -188,7 +189,7 @@ public Event_StatusValue_S(id)
 	}
 	else if(pid != g_iActiveTarget[id])
 	{
-		if(ttt_get_game_state() == PREPARING || ttt_get_game_state() == OFF)
+		if(mode == PREPARING || mode == OFF)
 			ShowSyncHudMsg(id, g_iStatusSync, "%s", message);
 		else 
 		{

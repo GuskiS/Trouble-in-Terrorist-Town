@@ -24,25 +24,6 @@ new const g_szWeaponsList[][] =
 	"weapon_deagle", "weapon_sg552", "weapon_ak47", "weapon_knife", "weapon_p90"
 };
 
-new const g_szBlockSet[][] =
-{
-	"BombDrop",
-	"BombPickup",
-	"DeathMsg",
-	"ScoreInfo",
-	"Radar",
-	"Money"
-};
-
-new const g_szMessageBlock[][] =
-{
-	"ScoreAttrib",
-	"TextMsg",
-	"SendAudio",
-	"Scenario",
-	"StatusIcon"
-};
-
 new HamHook:g_HamPrimaryAttack[sizeof(g_szWeaponsList)], HamHook:g_HamSecondaryAttack[sizeof(g_szWeaponsList)],
 	HamHook:g_HamItemDeploy[sizeof(g_szWeaponsList)];
 new Array:g_aCrowbarModels, Array:g_aGrenadeModels;
@@ -141,6 +122,24 @@ public plugin_init()
 {
 	register_plugin("[TTT] Replacements", TTT_VERSION, TTT_AUTHOR);
 
+	new const g_szBlockSet[][] =
+	{
+		"BombDrop",
+		"BombPickup",
+		"DeathMsg",
+		"ScoreInfo",
+		"Radar",
+		"Money"
+	};
+
+	new const g_szMessageBlock[][] =
+	{
+		"ScoreAttrib",
+		"TextMsg",
+		"SendAudio",
+		"Scenario",
+		"StatusIcon"
+	};
 	new i;
 	for(i = 0; i <= charsmax(g_szBlockSet); i++)
 		set_msg_block(get_user_msgid(g_szBlockSet[i]), BLOCK_SET);
@@ -150,11 +149,10 @@ public plugin_init()
 
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
 	register_forward(FM_GetGameDescription, "Forward_GetGameDescription_pre", 0);
-	register_forward(FM_SetModel, "Forward_SetModel_pre", 0);
 
 	RegisterHam(Ham_Spawn, "player", "Ham_Spawn_post", 1, true);
 	RegisterHam(Ham_Item_Deploy, "weapon_knife", "Ham_Knife_Deploy_post", 1);
-	RegisterHam(Ham_Item_Deploy, "weapon_hegrenade", "Ham_Grenade_Deploy_post", 1);
+	RegisterHam(Ham_Item_Deploy, "weapon_hegrenade", "Ham_Knife_Deploy_post", 1);
 
 	for(i = 0; i <= charsmax(g_szWeaponsList); i++)
 	{
@@ -177,28 +175,18 @@ public ttt_gamemode(gamemode)
 		my_ham_hooks(false);
 }
 
-public Forward_SetModel_pre(ent, model[])
+public grenade_throw(id, ent, nade)
 {
-	if(!is_valid_ent(ent))
-		return FMRES_IGNORED;
-
-	static classname[32];
-	entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
-	if(!equal(classname, "weaponbox") && !equal(classname, "grenade"))
-		return FMRES_IGNORED;
-
-	if(equal(model, "models/w_hegrenade.mdl"))
+	if(nade == CSW_HEGRENADE && is_user_alive(id))
 	{
 		if(entity_get_float(ent, EV_FL_dmgtime) != 0.0)
 		{
 			static model[TTT_MAXFILELENGHT];
-			ArrayGetString(g_aGrenadeModels, 2, model, charsmax(model));
+			if(!model[0])
+				ArrayGetString(g_aGrenadeModels, 2, model, charsmax(model));
 			entity_set_model(ent, model);
-			return FMRES_SUPERCEDE;
 		}
 	}
-
-	return FMRES_IGNORED;
 }
 
 public Message_Block(msgid, dest, id)
@@ -293,19 +281,6 @@ public Ham_Knife_Deploy_post(ent)
 		ArrayGetString(g_aCrowbarModels, 0, model, charsmax(model));
 		entity_set_string(id, EV_SZ_viewmodel, model);
 		ArrayGetString(g_aCrowbarModels, 1, model, charsmax(model));
-		entity_set_string(id, EV_SZ_weaponmodel, model);
-	}
-}
-
-public Ham_Grenade_Deploy_post(ent)
-{
-	new id = get_weapon_owner(ent);
-	if(is_user_alive(id))
-	{
-		static model[TTT_MAXFILELENGHT];
-		ArrayGetString(g_aGrenadeModels, 0, model, charsmax(model));
-		entity_set_string(id, EV_SZ_viewmodel, model);
-		ArrayGetString(g_aGrenadeModels, 1, model, charsmax(model));
 		entity_set_string(id, EV_SZ_weaponmodel, model);
 	}
 }

@@ -7,10 +7,6 @@
 
 #define m_iKevlar 112
 
-#if AMXX_VERSION_NUM < 183 
-#define write_coord_f(%0)            engfunc(EngFunc_WriteCoord, %0)
-#endif
-
 new g_iItem_Defuser, g_iItem_Armor, cvar_price_defuser, cvar_price_armor;
 new g_iBloodSpraySprite, g_iBloodDropSprite, g_iTempEntity;
 
@@ -59,8 +55,7 @@ public ttt_item_selected(id, item, name[], price)
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM2", name, id, "TTT_ITEM5");
 		return PLUGIN_HANDLED;
 	}
-
-	if(item == g_iItem_Armor)
+	else if(item == g_iItem_Armor)
 	{
 		cs_set_user_armor(id, 100, CS_ARMOR_VESTHELM);
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM2", name, id, "TTT_ITEM5");
@@ -137,8 +132,3 @@ public Ham_TraceAttack_post()
 		g_iTempEntity = 0;
 	}
 }
-
-#if AMXX_VERSION_NUM < 183 
-stock message_begin_f(dest, msg_type, const Float:origin[3] = {0.0,0.0,0.0}, player=0)
-	engfunc(EngFunc_MessageBegin, dest, msg_type, origin, player);
-#endif

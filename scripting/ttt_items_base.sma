@@ -12,7 +12,7 @@ enum _:ItemData
 new g_iTotalItems = -1, g_iSetupItems = -1;
 new g_iItemForward, Array:g_iItems, Array:g_iSetup;
 
-new const g_sBuyCommands[][] =  
+new const g_szBuyCommands[][] =  
 { 
     "buy", "buyequip", "usp", "glock", "deagle", "p228", "elites", "fn57", "m3", "xm1014", "mp5", "tmp", "p90", "mac10", "ump45", "ak47",  
     "galil", "famas", "sg552", "m4a1", "aug", "scout", "awp", "g3sg1", "sg550", "m249", "vest", "vesthelm", "flash", "hegren", 
@@ -57,15 +57,14 @@ public ttt_gamemode(gamemode)
 
 public client_command(id)
 {
-	if(ttt_return_check(id) || !is_user_alive(id))
+	if(!is_user_alive(id) || ttt_return_check(id))
 		return PLUGIN_CONTINUE;
 
-	new i;
 	static command[16];
 	read_argv(0, command, charsmax(command));
-	for(i = 0; i <= charsmax(g_sBuyCommands); i++)
+	for(new i = 0; i <= charsmax(g_szBuyCommands); i++)
 	{
-		if(equal(command, g_sBuyCommands[i]))
+		if(equal(command, g_szBuyCommands[i]))
 		{
 			if(!task_exists(id))
 				set_task(0.1, "ttt_buymenu_show", id);
@@ -76,7 +75,8 @@ public client_command(id)
 
 	if(equal(command, "client_buy_open"))
 	{
-		message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("BuyClose"), _, id);
+		// CHANGED
+		message_begin(MSG_ONE, get_user_msgid("BuyClose"), _, id);
 		message_end();
 		ttt_buymenu_show(id);
 	}
@@ -86,20 +86,20 @@ public client_command(id)
 
 public ttt_buymenu_show(id)
 {
-	if(ttt_return_check(id) || !is_user_alive(id))
+	if(!is_user_alive(id) || ttt_return_check(id))
 		return PLUGIN_HANDLED;
 
-	new team = ttt_get_special_state(id);
 	if(g_iTotalItems == -1)
 	{
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_NOITEMSTOTAL");
 		return PLUGIN_HANDLED;
 	}
 
-	new	i, inno;
+	new inno;
 	static data[ItemData], item[128], num[3];
-	new iMenu = menu_create("\rTTT Buy menu", "ttt_buymenu_handle");
-	for(i = 0; i < g_iTotalItems; i++)
+	new menu = menu_create("\rTTT Buy menu", "ttt_buymenu_handle");
+	new team = ttt_get_special_state(id);
+	for(new i = 0; i < g_iTotalItems; i++)
     {
 		ArrayGetArray(g_iItems, i, data);
 		if(data[ItemCost] == -1) continue;
@@ -110,7 +110,7 @@ public ttt_buymenu_show(id)
 		{
 			formatex(item, charsmax(item), "%s\R\y%i												", data[ItemName], data[ItemCost]);
 			num_to_str(i, num, charsmax(num));
-			menu_additem(iMenu, item, num);
+			menu_additem(menu, item, num);
 		}
     }
 
@@ -120,13 +120,13 @@ public ttt_buymenu_show(id)
 		return PLUGIN_HANDLED;
 	}
 
-	menu_display(id, iMenu, 0);
+	menu_display(id, menu, 0);
 	return PLUGIN_HANDLED;
 }
 
 public ttt_buymenu_handle(id, menu, item)
 {
-	if(ttt_return_check(id) || !is_user_alive(id))
+	if(!is_user_alive(id) || ttt_return_check(id))
 		return PLUGIN_HANDLED;
 
 	if(item == MENU_EXIT)
@@ -143,7 +143,8 @@ public ttt_buymenu_handle(id, menu, item)
 	static data[ItemData];
 	ArrayGetArray(g_iItems, itemid, data);
 
-	if((data[ItemTeam] == SPECIAL && ttt_get_special_state(id) != TRAITOR && ttt_get_special_state(id) != DETECTIVE) || (ttt_get_special_state(id) != data[ItemTeam] && SPECIAL != data[ItemTeam]))
+	new player_state = ttt_get_special_state(id);
+	if((data[ItemTeam] == SPECIAL && player_state != TRAITOR && player_state != DETECTIVE) || (player_state != data[ItemTeam] && SPECIAL != data[ItemTeam]))
 	{
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM3", id, special_names[data[ItemTeam]], data[ItemName]);
 		return PLUGIN_HANDLED;
@@ -279,9 +280,7 @@ public _get_item_name(plugin, param)
 		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_item_name)") -1;
 
 	new data[SetupData];
-	ArrayGetArray(g_iSetup, get_param(1), data);
-
+	ArrayGetArray(g_iItems, get_param(1), data);
 	set_string(2, data[ItemName], get_param(3));
-
 	return 1;
 }

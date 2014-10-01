@@ -4,7 +4,6 @@
 #define _cswa_included
 
 #pragma semicolon 1
-#pragma dynamic 16384
 
 stock set_weapon_string(ent, type, array[])		entity_set_string(ent, type, array);
 stock set_weapon_float(ent, type, Float:val)	entity_set_float(ent, type, val);
@@ -62,19 +61,22 @@ enum _:STOREABLE_STRUCTURE
  *
  * @param id				Player index.
  * @param array[]			Array of STOREABLE_DATA enum.
+ * @param show				Should show weapon?
  * @return					Weapon handle.
  */
-native cswa_give_specific(id, array[]);
+native cswa_give_specific(id, array[], show = 0);
 
 /**
  * Gives player normal weapon.
  *
  * @param id				Player index.
  * @param csw_id			CSW_*.
+ * @param clip				Clip.
  * @param ammo				Ammo.
+ * @param show				Should show weapon?
  * @return					Weapon ENTID.
  */
-native cswa_give_normal(id, csw_id, clip, ammo);
+native cswa_give_normal(id, csw_id, clip, ammo, show = 0);
 
 /**
  * Called when someone is killed by special weapon.

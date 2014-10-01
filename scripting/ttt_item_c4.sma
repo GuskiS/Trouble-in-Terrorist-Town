@@ -198,7 +198,7 @@ public bomb_planted(id)
 
 	set_task(0.5, "set_attrib", id);
 	set_task(0.1, "set_c4_info", id);
-	ttt_set_player_stat(id, STATS_BOMBP, ttt_get_player_stat(id, STATS_BOMBP)+1);
+	ttt_set_stats(id, STATS_BOMBP, ttt_get_player_stat(id, STATS_BOMBP)+1);
 
 	new Float:fOrigin[3];
 	entity_get_vector(id, EV_VEC_origin, fOrigin);
@@ -319,7 +319,7 @@ public C4_Think(ent)
 
 		entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1000.0);
 		c4_remove_ent(ent);
-		ttt_set_player_stat(id, STATS_BOMBE, ttt_get_player_stat(id, STATS_BOMBE)+1);
+		ttt_set_stats(id, STATS_BOMBE, ttt_get_player_stat(id, STATS_BOMBE)+1);
 	}
 	else entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1.0);
 

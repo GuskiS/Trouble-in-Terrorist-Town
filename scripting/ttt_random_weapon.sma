@@ -58,7 +58,7 @@ public plugin_init()
 
 public Ham_Spawn_post(id)
 {
-	if(is_user_alive(id) && (ttt_get_game_state() == PREPARING || ttt_get_game_state() == UNSET))
+	if(is_user_alive(id))
 		give_random_weap(id);
 }
 

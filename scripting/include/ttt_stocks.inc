@@ -50,6 +50,16 @@ stock ttt_return_check(id)
 	return 0;
 }
 
+stock ttt_set_stats(id, stat, num)
+{
+	static pointer;
+	if(!pointer)
+		pointer = get_cvar_pointer("ttt_stats");
+
+	if(pointer && get_pcvar_num(pointer))
+		ttt_set_player_stat(id, stat, num);
+}
+
 stock auto_exec_config(const szName[])
 {
 	new szFileName[32];

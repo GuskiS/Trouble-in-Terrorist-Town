@@ -49,14 +49,12 @@ public Forward_EmitSound_pre(id, channel, sample[])
 
 		if(equal(classname, "grenade"))
 		{
-			static model[32];
-			entity_get_string(ent, EV_SZ_model, model, charsmax(model));
-			if(equal(model, "models/w_c4.mdl"))
+			entity_get_string(ent, EV_SZ_model, classname, charsmax(classname));
+			if(equal(classname, "models/w_c4.mdl"))
 			{
 				if(entity_range(id, ent) < 50.0)
 					ttt_wires_show(id, ent);
 				else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE3");
-				client_cmd(id, "-use");
 			}
 		}
 	}
@@ -74,10 +72,10 @@ public bomb_planted(id)
 
 public check_all(c4)
 {
-	new index = c4_store(c4), timer = floatround(cs_get_c4_explode_time(c4) - get_gametime()), i, rights, wires, Float:t, ran;
+	new index = c4_store(c4), timer = floatround(cs_get_c4_explode_time(c4) - get_gametime()), wires;
 	new maxtime = get_pcvar_num(get_cvar_pointer("ttt_c4_maxtime"))/sizeof(g_iWireColors);
 
-	for(i = 0; i < sizeof(g_iWireColors); i++)
+	for(new i = 0; i < sizeof(g_iWireColors); i++)
 	{
 		if(timer > (maxtime * (i+1)))
 			wires++;
@@ -89,9 +87,9 @@ public check_all(c4)
 	g_iC4Info[index][WIRES] = wires;
 	g_iC4Info[index][TIME] = timer;
 
-	t = ((wires-0.5)/wires)/0.5;
-	ran = random_num(floatround_floor, floatround_ceil);
-	rights = floatround(wires/t, floatround_method:ran);
+	new Float:temp = ((wires-0.5)/wires)/0.5;
+	new ran = random_num(floatround_floor, floatround_ceil);
+	new rights = floatround(wires/temp, floatround_method:ran);
 
 	if(wires == 2)
 		rights = 1;
@@ -118,8 +116,7 @@ public ttt_gamemode(gamemode)
 
 public reset_all(id)
 {
-	new i;
-	for(i = 0; i <= charsmax(g_iWireColors); i++)
+	for(new i = 0; i <= charsmax(g_iWireColors); i++)
 	{
 		g_iPlayerWires[id][0][i] = -1;
 		g_iPlayerWires[id][1][i] = 0;
@@ -134,12 +131,12 @@ public ttt_wires_show(id, ent)
 	reset_all(id);
 	get_c4_info(id, ent);
 
-	new param[1], i;
+	new param[1];
 	param[0] = ent;
 	set_task(1.0, "check_distance", id, param, 1, "b");
 
 	new menu = menu_create("\rWires", "ttt_wires_handler");
-	for(i = 0; i < g_iC4Info[c4_get(ent)][WIRES]; i++)
+	for(new i = 0; i < g_iC4Info[c4_get(ent)][WIRES]; i++)
 		menu_additem(menu, g_iWireColors[g_iPlayerWires[id][0][i]], "", 0);
 
 	menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
@@ -151,8 +148,7 @@ public ttt_wires_show(id, ent)
 
 public check_distance(param[], id)
 {
-	new ent = param[0];
-	if(!is_valid_ent(ent) || entity_range(id, ent) > 50.0)
+	if(!is_valid_ent(param[0]) || entity_range(id, param[0]) > 50.0)
 	{
 		remove_task(id);
 		show_menu(id, 0, "^n", 1);
@@ -184,10 +180,10 @@ public get_c4_info(id, c4)
 		return;
 
 	g_iPlayerC4[id] = c4;
-	new i, size = g_iC4Info[c4_get(c4)][WIRES];
+	new size = g_iC4Info[c4_get(c4)][WIRES];
 	random_right(id, size, c4);
 
-	for(i = 0; i < size; i++)
+	for(new i = 0; i < size; i++)
 		g_iPlayerWires[id][0][i] = random_order(id, size);
 }
 
@@ -239,7 +235,7 @@ public check_defusion(id, item, c4)
 		if(is_valid_ent(c4))
 			remove_entity(c4);
 
-		ttt_set_player_stat(id, STATS_BOMBD, ttt_get_player_stat(id, STATS_BOMBD)+1);
+		ttt_set_stats(id, STATS_BOMBD, ttt_get_player_stat(id, STATS_BOMBD)+1);
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE1");
 	}
 	else
@@ -279,8 +275,7 @@ stock c4_get(c4)
 
 stock c4_clear(c4)
 {
-	new i, z;
-	for(i = 0; i < MAX_C4; i++)
+	for(new z, i = 0; i < MAX_C4; i++)
 	{
 		for(z = 0; z < C4INFO; z++)
 		{

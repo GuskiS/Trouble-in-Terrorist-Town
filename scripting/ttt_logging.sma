@@ -110,7 +110,7 @@ public log_all_damage(attacker)
 public Ham_Killed_post(victim, killer, shouldgib)
 {
 	if(ttt_return_check(killer))
-		return HAM_IGNORED;
+		return;
 
 	static name[32], killmsg[64], msg[TTT_LOG_SIZE];
 	get_user_name(victim, name, charsmax(name));
@@ -123,19 +123,15 @@ public Ham_Killed_post(victim, killer, shouldgib)
 	ids[0] = killer;
 	ids[1] = victim;
 	set_task(0.1, "log_damage", _, ids, 2);
-	
-	return HAM_HANDLED;
 }
 
 public Ham_TakeDamage_post(victim, inflictor, attacker, Float:damage, DamageBits)
 {
 	if(ttt_return_check(attacker))
-		return HAM_IGNORED;
+		return;
 
 	new dmg = floatround(entity_get_float(victim, EV_FL_dmg_take));
 	g_iDamageHolder[attacker][victim] += dmg;
-
-	return HAM_HANDLED;
 }
 
 public log_damage(param[])
@@ -227,6 +223,8 @@ stock bit_to_int(n)
 	{
 		n = n/2;
 		count++;
+		if(count > 7)
+			break;
 	}
 
 	return count;

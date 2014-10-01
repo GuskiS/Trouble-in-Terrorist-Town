@@ -121,7 +121,7 @@ public Ham_Killed_pre(victim, killer, gibs)
 
 public Ham_ObjectCaps_pre(id)
 {
-	if(!g_iItemBought || !is_user_alive(id) || ttt_return_check(id) || id == entity_get_int(id, EV_INT_iuser2) || !(get_user_button(id) & IN_USE) || task_exists(id))
+	if(!g_iItemBought || !is_user_alive(id) || id == entity_get_int(id, EV_INT_iuser2) || !(get_user_button(id) & IN_USE) || task_exists(id) || ttt_return_check(id))
 		return HAM_IGNORED;
 		
 	new ent, body;

@@ -5,8 +5,8 @@
 #include <ttt>
 #include <amx_settings_api>
 
-new g_iDeathStation[33], bool:g_iHasDeathStation[33], g_iKilledBy[33], g_iSetupItem[33] = {-1, -1, ...};
-new cvar_price_ds, g_iItem_DeathStation, g_iItem_Backpack[33], g_iItemBought;
+new g_iHasDeathStation[33], g_iSetupItem[33] = {-1, -1, ...}, g_iItem_Backpack[33];
+new cvar_price_ds, g_iItem_DeathStation, g_iItemBought;
 new g_szDeathStationModel[TTT_MAXFILELENGHT];
 
 public plugin_precache()
@@ -35,12 +35,6 @@ public plugin_init()
 	g_iItem_DeathStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_ds), TRAITOR);
 }
 
-public plugin_natives()
-{
-	register_library("ttt");
-	register_native("ttt_get_ds_kill", "_get_ds_kill");
-}
-
 public ttt_gamemode(gamemode)
 {
 	if(!g_iItemBought)
@@ -58,12 +52,8 @@ public ttt_gamemode(gamemode)
 		{
 			id = players[num];
 			g_iHasDeathStation[id] = false;
-			g_iKilledBy[id] = false;
 			g_iItem_Backpack[id] = -1;
-
-			//ttt_item_setup_remove(g_iSetupItem[id]);
 			g_iSetupItem[id] = -1;
-			g_iDeathStation[id] = false;
 		}
 		g_iItemBought = false;
 	}
@@ -123,10 +113,8 @@ public Forward_EmitSound_pre(id, channel, sample[])
 			entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
 			if(equal(classname, TTT_DEATHSTATION))
 			{
-				static owner;
-				owner = entity_get_int(ent, EV_INT_iuser1);
-				g_iKilledBy[id] = owner;
-				ExecuteHamB(Ham_Killed, id, owner, false);
+				ttt_set_playerdata(id, PD_KILLEDBYITEM, g_iItem_DeathStation);
+				ExecuteHamB(Ham_Killed, id, entity_get_int(ent, EV_INT_iuser1), false);
 			}
 		}
 	}
@@ -157,7 +145,6 @@ public death_station_create(id, origin[3], name[])
 	entity_set_vector(ent, EV_VEC_rendercolor, colors);
 	entity_set_int(ent, EV_INT_iuser1, id);
 
-	g_iDeathStation[id] = ent;
 	g_iSetupItem[id] = ttt_item_setup_add(g_iItem_DeathStation, ent, 120, id, 0, 1, name); //ITEM: ID, ENT, TIMER, OWNER, TRACER, ACTIVE, NAME
 	entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1.0);
 }
@@ -167,8 +154,7 @@ public DeathStation_Think(ent)
 	if(!g_iItemBought)
 		return;
 
-	static id;
-	id = entity_get_int(ent, EV_INT_iuser1);
+	new id = entity_get_int(ent, EV_INT_iuser1);
 	if(g_iSetupItem[id] == -1)
 		return;
 
@@ -182,13 +168,4 @@ public DeathStation_Think(ent)
 		entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1.0);
 	}
 	else entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1000.0);
-}
-
-public _get_ds_kill(plugin, params)
-{
-	if(params != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_ds_kill)");
-
-	new id = get_param(1);
-	return g_iKilledBy[id];
 }

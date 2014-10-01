@@ -5,7 +5,7 @@
 #include <fun>
 #include <ttt>
 
-new cvar_end_game_godmode, g_iTSpawns;
+new cvar_end_game_godmode;
 const m_iNumSpawns = 365;
 
 public plugin_init()
@@ -18,19 +18,6 @@ public plugin_init()
 
 	register_clcmd("chooseteam", "cmd_chooseteam");
 	register_clcmd("jointeam", "cmd_chooseteam");
-}
-
-public pfn_spawn(ent)
-{
-	if(!is_valid_ent(ent))
-		return PLUGIN_CONTINUE;
-	
-	static classname[32];
-	entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
-	if(equal(classname, "info_player_deathmatch"))
-		g_iTSpawns++;
-
-	return PLUGIN_CONTINUE;
 }
 
 public ttt_gamemode(gamemode)

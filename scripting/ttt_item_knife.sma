@@ -27,7 +27,7 @@ new const Float:g_szDroppedSize[][3] =
 	{20.0, 20.0, 5.0}
 };
 
-new g_iKnifeType[33], g_iKilledByKnife[33], g_iItem_Knife, g_iNadeVelocity[33][2];
+new g_iKnifeType[33], g_iItem_Knife, g_iNadeVelocity[33][2];
 new cvar_dmgmult, cvar_pattack_rate, cvar_sattack_rate, cvar_pattack_recoil,
 	cvar_sattack_recoil, cvar_price_knife, cvar_knife_glow, cvar_knife_velocity, cvar_knife_bounce;
 
@@ -109,14 +109,12 @@ public plugin_init()
 public plugin_natives()
 {
 	register_library("ttt");
-	register_native("ttt_is_knife_kill", "_is_knife_kill");
 	register_native("ttt_knife_holding", "_knife_holding");
 }
 
 public client_disconnect(id)
 {
 	g_iKnifeType[id] = K_NONE;
-	g_iKilledByKnife[id] = false;
 	g_iNadeVelocity[id][0] = false;
 	g_iNadeVelocity[id][1] = false;
 }
@@ -132,7 +130,6 @@ public ttt_gamemode(gamemode)
 		for(--num; num >= 0; num--)
 		{
 			id = players[num];
-			g_iKilledByKnife[id] = false;
 			g_iNadeVelocity[id][0] = false;
 			g_iNadeVelocity[id][1] = false;
 
@@ -306,17 +303,12 @@ public Touch_Grenade(nade, id)
 			return PLUGIN_HANDLED;
 		}
 	}
-
-	return PLUGIN_CONTINUE;
 }
 
 public Ham_Killed_pre(victim, killer, shouldgib)
 {
-	if(is_user_connected(killer))
-	{
-		if(g_iKnifeType[killer])
-			g_iKilledByKnife[victim] = true;
-	}
+	if(is_user_alive(killer) && g_iKnifeType[killer] == K_ON && get_user_weapon(killer) == CSW_KNIFE)
+		ttt_set_playerdata(victim, PD_KILLEDBYITEM, g_iItem_Knife);
 
 	g_iKnifeType[victim] = K_NONE;
 }
@@ -327,7 +319,7 @@ public Ham_PrimaryAttack_post(knife)
 		return;
 
 	new id = get_pdata_cbase(knife, m_pPlayer, XO_WEAPON);
-	if(is_user_connected(id) && g_iKnifeType[id] == K_ON && get_user_weapon(id) == CSW_KNIFE)
+	if(is_user_connected(id) && g_iKnifeType[id] == K_ON)
 	{
 		attack_post(id, knife, get_pcvar_float(cvar_pattack_rate), get_pcvar_float(cvar_pattack_recoil));
 		clcmd_throw(id, get_pcvar_num(cvar_knife_velocity), 0);
@@ -393,23 +385,18 @@ public Ham_PrimaryAttack_Grenade_pre(nade)
 
 public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, damage_bits)
 {	
-	if(victim == attacker || !is_user_connected(attacker))
+	if(victim == attacker || !is_user_connected(attacker) || !is_user_alive(inflictor))
 		return HAM_IGNORED;
 
-	if(g_iKnifeType[attacker] == K_ON)
-	{
-		a_lot_of_blood(victim);
+	if(g_iKnifeType[attacker] == K_ON && inflictor == attacker && get_user_weapon(attacker) == CSW_KNIFE)
 		SetHamParamFloat(4, damage * get_pcvar_float(cvar_dmgmult));
-	}
 
 	return HAM_HANDLED;
 }
 
 public give_knife(id, knife)
 {
-	//pickup_weapon(id, CSW_KNIFE);
 	strip_knife(id, K_ON);
-	//ham_give_weapon(id, "weapon_knife");
 	emit_sound(id, CHAN_WEAPON, "items/gunpickup2.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
 	if(is_valid_ent(knife))
 		remove_entity(knife);
@@ -451,36 +438,6 @@ public reset_user_knife(id)
 	emessage_end();
 }
 
-stock a_lot_of_blood(id)
-{
-	static iOrigin[3];
-	get_user_origin(id, iOrigin);
-
-	message_begin(MSG_PVS, SVC_TEMPENTITY, iOrigin);
-	write_byte(TE_BLOODSTREAM);
-	write_coord(iOrigin[0]);
-	write_coord(iOrigin[1]);
-	write_coord(iOrigin[2]+10);
-	write_coord(random_num(-360, 360));
-	write_coord(random_num(-360, 360));
-	write_coord(-10);
-	write_byte(70);
-	write_byte(random_num(50, 100));
-	message_end();
-
-	new j;
-	for(j = 0; j < 4; j++) 
-	{
-		message_begin(MSG_PVS, SVC_TEMPENTITY, iOrigin);
-		write_byte(TE_WORLDDECAL);
-		write_coord(iOrigin[0]+random_num(-100, 100));
-		write_coord(iOrigin[1]+random_num(-100, 100));
-		write_coord(iOrigin[2]-36);
-		write_byte(random_num(190, 197));
-		message_end();
-	}
-}
-
 stock UTIL_PlayWeaponAnimation(const id, const seq)
 {
 	entity_set_int(id, EV_INT_weaponanim, seq);
@@ -516,15 +473,6 @@ stock GetGrenadeType(ent)
 		return CSW_FLASHBANG;
 
 	return 0;
-}
-
-public _is_knife_kill(plugin, params)
-{
-	new id = get_param(1);
-	if(params != 1 || is_user_alive(id))
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params or user alive (ttt_is_knife_kill)");
-
-	return g_iKilledByKnife[id];
 }
 
 public _knife_holding(plugin, params)

@@ -31,10 +31,10 @@ public pfn_spawn(ent)
 	if(!is_valid_ent(ent))
 		return PLUGIN_CONTINUE;
 
-	static classname[32], i;
+	static classname[32];
 	entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
 
-	for(i = 0; i < sizeof(g_szObjectives); i++)
+	for(new i = 0; i < sizeof(g_szObjectives); i++)
 	{
 		if(equal(classname, g_szObjectives[i]))
 		{

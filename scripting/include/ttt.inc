@@ -138,7 +138,7 @@ native ttt_backpack_show(owner);
  * Returns player's state when he was/is alive.
  *
  * @param id				Players id.
- * @return					True or false.
+ * @return					state
  */
 native ttt_get_special_alive(id);
 

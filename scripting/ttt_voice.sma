@@ -4,7 +4,7 @@
 #include <engine>
 #include <ttt>
 
-new g_iSpecialTalking[33][Special], g_Msg_TeamInfo;
+new g_iSpecialTalking[33][Special], g_pMsgTeamInfo;
 
 public plugin_init()
 {
@@ -16,7 +16,7 @@ public plugin_init()
 	register_clcmd("+specialvoice", "cmd_voiceon");
 	register_clcmd("-specialvoice", "cmd_voiceoff");
 
-	g_Msg_TeamInfo = get_user_msgid("TeamInfo");
+	g_pMsgTeamInfo = get_user_msgid("TeamInfo");
 }
 
 public ttt_gamemode(gamemode)
@@ -35,16 +35,13 @@ public ttt_gamemode(gamemode)
 	}
 }
 
-
 public Ham_Killed_post(victim, killer, shouldgib)
 {
 	if(ttt_return_check(victim))
-		return HAM_IGNORED;
+		return;
 
 	g_iSpecialTalking[victim][TRAITOR] = false;
 	g_iSpecialTalking[victim][DETECTIVE] = false;
-	
-	return HAM_HANDLED;
 }
 
 public Forward_SetClientListening_pre(receiver, sender, bool:listen)
@@ -124,7 +121,7 @@ stock voice_check(id, type, getstate)
 		//if(id == i) continue;
 		if(getstate == ttt_get_special_state(i))
 		{
-			message_begin(MSG_ONE_UNRELIABLE, g_Msg_TeamInfo, _, i);
+			message_begin(MSG_ONE_UNRELIABLE, g_pMsgTeamInfo, _, i);
 			write_byte(id);
 			if(!type)
 				write_string("SPECTATOR");
