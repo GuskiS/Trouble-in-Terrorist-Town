@@ -21,8 +21,8 @@
 	#endif
 #endif
 
-#define TTT_VERSION_INT		250
 #define TTT_VERSION			"2.5.0"
+#define TTT_VERSION_INT			250
 #define TTT_AUTHOR			"GuskiS"
 #define TTT_TAG				"^3[^4TTT^3]^1"
 
