@@ -13,7 +13,7 @@ enum _:HPSTATION
 
 new g_iHPStation[33][HPSTATION], g_iHasHPStation[33], g_iItem_Backpack[33], g_iSetupItem[33] = {-1, -1, ...};
 new cvar_price_hp, g_iItem_HPStation, g_Msg_StatusIcon, g_iItemBought;
-new g_szHPStationModel[TTT_MAXFILELENGHT];
+new g_szHPStationModel[TTT_FILELENGHT];
 
 public plugin_precache()
 {
@@ -31,15 +31,15 @@ public plugin_init()
 	register_plugin("[TTT] Item: HP Station", TTT_VERSION, TTT_AUTHOR);
 	
 	cvar_price_hp = my_register_cvar("ttt_price_hp", "2");
-	RegisterHam(Ham_ObjectCaps, "player", "Ham_ObjectCaps_pre", 0, true);
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_pre", 0, true);
+	RegisterHamPlayer(Ham_ObjectCaps, "Ham_ObjectCaps_pre", 0);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
 
 	register_think(TTT_HPSTATION, "HPStation_Think");
 	g_Msg_StatusIcon = get_user_msgid("StatusIcon");
 
-	new name[TTT_ITEMNAME];
+	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID4");
-	g_iItem_HPStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_hp), DETECTIVE);
+	g_iItem_HPStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_hp), PC_DETECTIVE);
 }
 
 public ttt_gamemode(gamemode)
@@ -47,12 +47,11 @@ public ttt_gamemode(gamemode)
 	if(!g_iItemBought)
 		return;
 
-	if(gamemode == ENDED || gamemode == RESTARTING)
+	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 		remove_entity_name(TTT_HPSTATION);
 
-	if(gamemode == PREPARING || gamemode == RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
-
 		new num, id;
 		static players[32];
 		get_players(players, num);
@@ -133,11 +132,16 @@ public Ham_ObjectCaps_pre(id)
 		entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
 		if(equal(classname, TTT_HPSTATION))
 		{
-			if(get_user_health(id) >= 100)
+			new health = get_user_health(id);
+			if(health >= 100)
 			{
 				remove_all(id);
 				return HAM_IGNORED;
 			}
+
+			static name[32];
+			get_user_name(id, name, charsmax(name));
+			ttt_log_to_file(LOG_ITEM, "%s started healing, HP: %d", name, health);
 			g_iHPStation[id][ENT] = ent;
 			set_task(0.1, "hp_station_use", id, _, _, "b");
 			return HAM_HANDLED;
@@ -184,7 +188,7 @@ public HPStation_Think(ent)
 		return;
 
 	new id = entity_get_int(ent, EV_INT_iuser1);
-	static data[SetupData];
+	static data[SETUP_DATA];
 	ttt_item_setup_get(g_iSetupItem[id], data);
 
 	if(data[SETUP_ITEMTIME] != 0)
@@ -236,6 +240,9 @@ stock remove_all(id)
 	{
 		remove_task(id);
 		reset_icons(id);
+		static name[32];
+		get_user_name(id, name, charsmax(name));
+		ttt_log_to_file(LOG_ITEM, "%s ended healing, HP: %d", name, get_user_health(id));
 	}
 }
 

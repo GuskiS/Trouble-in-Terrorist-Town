@@ -1,15 +1,22 @@
 #include <amxmodx>
 #include <hamsandwich>
-#include <engine>
 #include <fakemeta>
 #include <cstrike>
+#include <engine>
+#include <xs>
 #include <cs_weapons_api>
 #include <cs_weapons_api_stocks>
+
+#if AMXX_VERSION_NUM < 183
+	stock HamHook:RegisterHamPlayer(Ham:function, const Callback[], Post=0)
+		return RegisterHam(function, "player", Callback, Post);
+#endif
 
 #define OFFSET_LINUX_WEAPONS 4
 #define OFFSET_LINUX_PLAYERS 5
 
 #define m_flNextPrimaryAttack		46
+#define m_flNextSecondaryAttack		47
 #define m_flTimeWeaponIdle			48
 #define m_fInReload					54
 #define m_fInSpecialReload			55
@@ -35,14 +42,14 @@ new const g_szWeaponsList[][] =
 	"weapon_g3sg1", "weapon_flashbang", "weapon_deagle", "weapon_sg552", "weapon_ak47", "weapon_knife", "weapon_p90"
 };
 
-new g_pKilledForward;
+new g_pKilledForward, g_pDamageForward;
 new g_iShouldGive[33], g_iWeaponRegister[sizeof(g_szWeaponsList)];
 
 public plugin_precache()
 {
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_pre", 0, true);
-	RegisterHam(Ham_TakeDamage, "player", "Ham_TakeDamage_pre", 0, true);
-	RegisterHam(Ham_AddPlayerItem, "player", "Ham_AddPlayerItem_pre", 0, true);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
+	RegisterHamPlayer(Ham_TakeDamage, "Ham_TakeDamage_pre", 0);
+	RegisterHamPlayer(Ham_AddPlayerItem, "Ham_AddPlayerItem_pre", 0);
 
 	// CAUSE CRASH IN INIT
 	for(new i = 1; i < sizeof(g_szWeaponsList); i++)
@@ -61,6 +68,7 @@ public plugin_init()
 	register_touch("weaponbox", "player", "Touch_WeaponBox");
 
 	g_pKilledForward = CreateMultiForward("cswa_killed", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
+	g_pDamageForward = CreateMultiForward("cswa_damage", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT);
 }
 
 public plugin_natives()
@@ -78,6 +86,7 @@ public client_disconnect(id)
 
 public Touch_WeaponBox(ent, id)
 {
+	//log_amx("TOUCH %d - %d", ent, id);
 	if(!is_user_alive(id) || !is_valid_ent(ent))
 		return PLUGIN_CONTINUE;
 
@@ -101,7 +110,7 @@ public Touch_WeaponBox(ent, id)
 			set_weapon_array(newent, array);
 			show_weapon(id, g_szWeaponsList[array[STRUCT_CSWA_CSW]]);
 
-			remove_entity(ent);
+			call_think(ent);
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -111,7 +120,7 @@ public Touch_WeaponBox(ent, id)
 		if(!count && special)
 		{
 			give_user_normal(id, cs_get_weapon_id(weapon_ent), cs_get_weapon_ammo(weapon_ent), get_weapon_integer(weapon_ent, REPL_CSWA_AMMO));
-			remove_entity(ent);
+			call_think(ent);
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -121,6 +130,7 @@ public Touch_WeaponBox(ent, id)
 
 public Forward_SetModel_pre(ent, model[])
 {
+	//log_amx("SETMODEL %d - %s", ent, model);
 	if(!is_valid_ent(ent))
 		return FMRES_IGNORED;
 
@@ -144,6 +154,7 @@ public Forward_SetModel_pre(ent, model[])
 
 public Ham_Killed_pre(victim, killer, shouldgib)
 {
+	//log_amx("KILLED %d - %d", victim, killer);
 	if(is_user_alive(killer))
 	{
 		new ent = find_ent_by_owner(-1, g_szWeaponsList[get_user_weapon(killer)], killer);
@@ -159,8 +170,9 @@ public Ham_Killed_pre(victim, killer, shouldgib)
 	return HAM_IGNORED;
 }
 
-public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, DamageBits)
+public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, bits)
 {
+	//log_amx("TAKEDAMAGE %d - %d", victim, attacker);
 	if(is_user_alive(inflictor) && attacker == inflictor)
 	{
 		new ent = find_ent_by_owner(-1, g_szWeaponsList[get_user_weapon(inflictor)], inflictor);
@@ -170,6 +182,8 @@ public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, DamageBits)
 			if(newdamage > -0.01)
 			{
 				SetHamParamFloat(4, damage * newdamage);
+				new ret;
+				ExecuteForward(g_pDamageForward, ret, ent, victim, attacker, damage);
 				return HAM_HANDLED;
 			}
 		}
@@ -180,6 +194,7 @@ public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, DamageBits)
 
 public Ham_AddPlayerItem_pre(id, ent)
 {
+	//log_amx("ADDPLAYERITEM %d - %d", id, ent);
 	if(!is_user_alive(id) || !is_valid_ent(ent))
 		return;
 
@@ -205,7 +220,8 @@ public Ham_AddPlayerItem_pre(id, ent)
 
 public Ham_Item_Holster_pre(ent)
 {
-	if(is_valid_ent(ent))
+	//log_amx("HOLSTER %d", ent);
+	if(is_valid_ent(ent) && !is_user_connected(ent))
 	{
 		new owner = get_weapon_owner(ent);
 		if(is_user_alive(owner))
@@ -215,7 +231,8 @@ public Ham_Item_Holster_pre(ent)
 
 public Ham_Item_Deploy_pre(ent)
 {
-	if(is_valid_ent(ent))
+	//log_amx("DEPLOY %d", ent);
+	if(is_valid_ent(ent) && !is_user_connected(ent))
 	{
 		new owner = get_weapon_owner(ent);
 		if(is_user_alive(owner))
@@ -225,7 +242,8 @@ public Ham_Item_Deploy_pre(ent)
 
 public Ham_Item_Deploy_post(ent)
 {
-	if(is_valid_ent(ent))
+	//log_amx("DEPLOY POST %d", ent);
+	if(is_valid_ent(ent) && !is_user_connected(ent))
 	{
 		new owner = get_weapon_owner(ent);
 		if(is_user_alive(owner) && get_weapon_edict(ent, REPL_CSWA_SET) == 2)
@@ -241,52 +259,77 @@ public Ham_Item_Deploy_post(ent)
 
 public Ham_PrimaryAttack_post(ent)
 {
-	if(is_valid_ent(ent) && is_user_alive(get_weapon_owner(ent)) && get_weapon_edict(ent, REPL_CSWA_SET) == 2)
+	if(!is_valid_ent(ent))
+		return;
+
+	//log_amx("ATTACK POST %d", ent);
+	new weapon_id = cs_get_weapon_id(ent);
+	if(no_ammo_weapon(weapon_id))
+		return;
+
+	new id = get_weapon_owner(ent);
+	if(is_user_alive(id) && get_weapon_edict(ent, REPL_CSWA_SET) == 2 && cs_get_weapon_ammo(ent))
 	{
-		new Float:speed = get_weapon_float(ent, REPL_CSWA_SPEEDDELAY);
-		if(speed)
+		new Float:recoil = get_weapon_float(ent, REPL_CSWA_RECOIL);
+		if(recoil)
 		{
-			set_pdata_float(ent, m_flNextPrimaryAttack, speed, OFFSET_LINUX_WEAPONS);
-			set_pdata_float(ent, m_flTimeWeaponIdle, speed, OFFSET_LINUX_WEAPONS);
+			new Float:angle[3];
+			entity_get_vector(id, EV_VEC_punchangle, angle);
+			xs_vec_mul_scalar(angle, recoil, angle);
+			entity_set_vector(id, EV_VEC_punchangle, angle);
+		}
+
+		new Float:speed = get_weapon_float(ent, REPL_CSWA_SPEEDDELAY);
+		if(speed) //&& delay * speed > 0.0)
+		{
+			set_pdata_float(id, m_flNextAttack, get_pdata_float(id, m_flNextAttack, OFFSET_LINUX_PLAYERS) * speed, OFFSET_LINUX_PLAYERS);
+			set_pdata_float(ent, m_flNextPrimaryAttack, get_pdata_float(ent, m_flNextPrimaryAttack, OFFSET_LINUX_WEAPONS) * speed, OFFSET_LINUX_WEAPONS);
+			set_pdata_float(ent, m_flNextSecondaryAttack, get_pdata_float(ent, m_flNextSecondaryAttack, OFFSET_LINUX_WEAPONS) * speed, OFFSET_LINUX_WEAPONS);
+			set_pdata_float(ent, m_flTimeWeaponIdle, get_pdata_float(ent, m_flTimeWeaponIdle, OFFSET_LINUX_WEAPONS) * speed, OFFSET_LINUX_WEAPONS);
 		}
 	}
 }
 
 public Ham_Item_PostFrame_pre(ent) 
 {
-	if(!is_valid_ent(ent))
+	//log_amx("FRAME %d", ent);
+	if(!is_valid_ent(ent) || !is_reloading(ent))
 		return HAM_IGNORED;
 
 	if(get_weapon_edict(ent, REPL_CSWA_SET) != 2)
+		return HAM_IGNORED;
+
+	new weapon_id = cs_get_weapon_id(ent);
+	if(no_ammo_weapon(weapon_id))
 		return HAM_IGNORED;
 
 	new id = get_weapon_owner(ent);
 	if(!is_user_alive(id))
 		return HAM_IGNORED;
 
-	if(cs_get_user_bpammo(id, cs_get_weapon_id(ent)) <= 0 || cs_get_weapon_ammo(ent) >= get_weapon_integer(ent, REPL_CSWA_MAXCLIP))
+	if(!can_reload(id, ent))
 	{
 		set_pdata_int(ent, m_fInReload, false, OFFSET_LINUX_WEAPONS);
 		set_pdata_int(ent, m_fInSpecialReload, false, OFFSET_LINUX_WEAPONS);
-		return HAM_IGNORED;
+		UTIL_PlayWeaponAnimation(id, 0);
+		return HAM_SUPERCEDE;
 	}
 
 	if(get_pdata_float(id, m_flNextAttack, OFFSET_LINUX_PLAYERS) <= 0.0)
 	{
+		new csw = cs_get_weapon_id(ent);
+		new clip = cs_get_weapon_ammo(ent);
+		new ammo = cs_get_user_bpammo(id, csw);
+		new difference = min(get_weapon_integer(ent, REPL_CSWA_MAXCLIP) - clip, ammo);
 		if(get_pdata_int(ent, m_fInReload, OFFSET_LINUX_WEAPONS))
 		{
-			new csw = cs_get_weapon_id(ent);
-			new clip = cs_get_weapon_ammo(ent);
-			new ammo = cs_get_user_bpammo(id, csw);
-			new difference = min(get_weapon_integer(ent, REPL_CSWA_MAXCLIP) - clip, ammo);
-		
 			cs_set_user_bpammo(id, csw, ammo - difference);
 			cs_set_weapon_ammo(ent, clip + difference);
 			set_pdata_int(ent, m_fInReload, false, OFFSET_LINUX_WEAPONS);
 
 			return HAM_HANDLED;
 		}
-		else if(get_pdata_int(ent, m_fInSpecialReload, OFFSET_LINUX_WEAPONS))
+		else if(get_pdata_int(ent, m_fInSpecialReload, OFFSET_LINUX_WEAPONS) == 1)
 		{
 			if(cs_get_weapon_ammo(ent) >= get_weapon_integer(ent, REPL_CSWA_MAXCLIP))
 			{
@@ -301,19 +344,23 @@ public Ham_Item_PostFrame_pre(ent)
 
 public Ham_Weapon_Reload_pre(ent) 
 {
-	if(!is_valid_ent(ent))
+	//log_amx("RELOAD %d", ent);
+	if(!is_valid_ent(ent) || !is_reloading(ent))
 		return HAM_IGNORED;
 
 	if(get_weapon_edict(ent, REPL_CSWA_SET) != 2)
+		return HAM_IGNORED;
+
+	new weapon_id = cs_get_weapon_id(ent);
+	if(no_ammo_weapon(weapon_id))
 		return HAM_IGNORED;
 
 	new id = get_weapon_owner(ent);
 	if(!is_user_alive(id))
 		return HAM_IGNORED;
 
-	if(cs_get_user_bpammo(id, cs_get_weapon_id(ent)) <= 0 || cs_get_weapon_ammo(ent) >= get_weapon_integer(ent, REPL_CSWA_MAXCLIP))
+	if(!can_reload(id, ent))
 	{
-		new weapon_id = get_user_weapon(id);
 		if(weapon_id == CSW_M3 || weapon_id == CSW_XM1014)
 			set_pdata_int(ent, m_fInSpecialReload, false, OFFSET_LINUX_WEAPONS);
 		else set_pdata_int(ent, m_fInReload, false, OFFSET_LINUX_WEAPONS);
@@ -326,10 +373,15 @@ public Ham_Weapon_Reload_pre(ent)
 
 public Ham_Weapon_Reload_post(ent) 
 {
-	if(!is_valid_ent(ent))
+	//log_amx("RELOAD POST %d", ent);
+	if(!is_valid_ent(ent) || !is_reloading(ent))
 		return;
 
 	if(get_weapon_edict(ent, REPL_CSWA_SET) != 2)
+		return;
+
+	new weapon_id = cs_get_weapon_id(ent);
+	if(no_ammo_weapon(weapon_id))
 		return;
 
 	new id = get_weapon_owner(ent);
@@ -339,25 +391,50 @@ public Ham_Weapon_Reload_post(ent)
 	new Float:reload = get_weapon_float(ent, REPL_CSWA_RELOADTIME);
 	if(reload != 0.0)
 	{
-		set_pdata_float(id, m_flNextAttack, reload, OFFSET_LINUX_PLAYERS);
-		set_pdata_float(ent, m_flTimeWeaponIdle, reload, OFFSET_LINUX_WEAPONS);
-		new weapon_id = get_user_weapon(id);
 		if(weapon_id == CSW_M3 || weapon_id == CSW_XM1014)
 			set_pdata_int(ent, m_fInSpecialReload, true, OFFSET_LINUX_WEAPONS);
-		else set_pdata_int(ent, m_fInReload, true, OFFSET_LINUX_WEAPONS);
+		else
+		{ 
+			set_pdata_int(ent, m_fInReload, true, OFFSET_LINUX_WEAPONS);
+			set_pdata_float(id, m_flNextAttack, reload, OFFSET_LINUX_PLAYERS);
+			set_pdata_float(ent, m_flTimeWeaponIdle, reload, OFFSET_LINUX_WEAPONS);
+		}
 	}
-	if(!get_pdata_int(ent, m_fInSpecialReload, OFFSET_LINUX_WEAPONS) && !get_pdata_int(ent, m_fInReload, OFFSET_LINUX_WEAPONS))
+	if(!can_reload(id, ent))
 		UTIL_PlayWeaponAnimation(id, 0);
+
+	if(reload < 0.0 && weapon_id == CSW_M3 || weapon_id == CSW_XM1014)
+	{
+		new csw = cs_get_weapon_id(ent);
+		new clip = cs_get_weapon_ammo(ent);
+		new ammo = cs_get_user_bpammo(id, csw);
+		new difference = min(get_weapon_integer(ent, REPL_CSWA_MAXCLIP) - clip, ammo);
+		cs_set_user_bpammo(id, csw, ammo - difference);
+		cs_set_weapon_ammo(ent, clip + difference);
+		set_pdata_int(ent, m_fInSpecialReload, false, OFFSET_LINUX_WEAPONS);
+		reload *= (-1.0);
+		set_pdata_float(ent, m_flTimeWeaponIdle, reload, OFFSET_LINUX_WEAPONS);
+		set_pdata_float(id, m_flNextAttack, reload, OFFSET_LINUX_PLAYERS);
+		set_pdata_float(ent, m_flNextPrimaryAttack, reload, OFFSET_LINUX_WEAPONS);
+		set_pdata_float(ent, m_flNextSecondaryAttack, reload, OFFSET_LINUX_WEAPONS);
+	}
 }
+
+stock can_reload(id, ent)
+	return cs_get_user_bpammo(id, cs_get_weapon_id(ent)) > 0 && cs_get_weapon_ammo(ent) < get_weapon_integer(ent, REPL_CSWA_MAXCLIP);
+
+stock is_reloading(ent)
+	return get_pdata_int(ent, m_fInReload, OFFSET_LINUX_WEAPONS) || get_pdata_int(ent, m_fInSpecialReload, OFFSET_LINUX_WEAPONS);
 
 public Event_WeapPickup(id)
 {
+	//log_amx("WEAPPICKUP %d", id);
 	if(is_user_alive(id) && g_iShouldGive[id] == read_data(1))
 	{
-		new ent = find_ent_by_owner(-1, g_szWeaponsList[g_iShouldGive[id]], id);
-		if(no_ammo_weapon(ent))
+		if(no_ammo_weapon(g_iShouldGive[id]))
 			return;
 
+		new ent = find_ent_by_owner(-1, g_szWeaponsList[g_iShouldGive[id]], id);
 		cs_set_user_bpammo(id, g_iShouldGive[id], get_weapon_integer(ent, REPL_CSWA_AMMO));
 		g_iShouldGive[id] = false;
 	}
@@ -365,6 +442,7 @@ public Event_WeapPickup(id)
 
 stock remove_ammo(id, ent)
 {
+	//log_amx("REMOVE_AMMO %d - %d", id, ent);
 	new weapon_id = cs_get_weapon_id(ent);
 	if(no_ammo_weapon(weapon_id))
 		return;
@@ -377,6 +455,7 @@ stock remove_ammo(id, ent)
 
 stock give_ammo(id, ent)
 {
+	//log_amx("GIVE_AMMO %d - %d", id, ent);
 	new weapon_id = cs_get_weapon_id(ent);
 	if(no_ammo_weapon(weapon_id))
 		return;
@@ -434,45 +513,10 @@ stock give_user_normal(id, csw, clip, ammo, show = 0)
 
 stock count_player_weapons(id, slot, &special)
 {
-	static const slots[] =
-	{
-		0, // NULL
-		2, // CSW_P228
-		0, // NULL
-		1, // CSW_SCOUT
-		4, // CSW_HEGRENADE
-		1, // CSW_XM1014
-		5, // CSW_C4
-		1, // CSW_MAC10
-		1, // CSW_AUG
-		4, // CSW_SMOKEGRENADE
-		2, // CSW_ELITE
-		2, // CSW_FIVESEVEN
-		1, // CSW_UMP45
-		1, // CSW_SG550
-		1, // CSW_GALIL
-		1, // CSW_FAMAS
-		2, // CSW_USP
-		2, // CSW_GLOCK
-		1, // CSW_AWP
-		1, // CSW_MP5NAVY
-		1, // CSW_M249
-		1, // CSW_M3
-		1, // CSW_M4A1
-		1, // CSW_TMP
-		1, // CSW_G3SG1
-		4, // CSW_FLASHBANG
-		2, // CSW_DEAGLE
-		1, // CSW_SG552
-		1, // CSW_AK47
-		3, // CSW_KNIFE
-		1 // CSW_P90
-	};
-
 	new count;
 	for(new ent, i = 1; i < sizeof(g_szWeaponsList); i++)
 	{
-		if(slots[i] == slot && user_has_weapon(id, i))
+		if(g_iWeaponSlots[i] == slot && user_has_weapon(id, i))
 		{
 			ent = find_ent_by_owner(-1, g_szWeaponsList[i], id);
 			if(ent)
@@ -496,6 +540,7 @@ stock get_weapon_array(ent, data[])
 	data[STRUCT_CSWA_SPEEDDELAY]	= _:get_weapon_float(ent, REPL_CSWA_SPEEDDELAY);
 	data[STRUCT_CSWA_DAMAGE]		= _:get_weapon_float(ent, REPL_CSWA_DAMAGE);
 	data[STRUCT_CSWA_RELOADTIME]	= _:get_weapon_float(ent, REPL_CSWA_RELOADTIME);
+	data[STRUCT_CSWA_RECOIL]		= _:get_weapon_float(ent, REPL_CSWA_RECOIL);
 	data[STRUCT_CSWA_CLIP]			= get_weapon_integer(ent, REPL_CSWA_CLIP);
 	data[STRUCT_CSWA_MAXCLIP]		= get_weapon_integer(ent, REPL_CSWA_MAXCLIP);
 	data[STRUCT_CSWA_AMMO]			= get_weapon_integer(ent, REPL_CSWA_AMMO);
@@ -514,6 +559,7 @@ stock set_weapon_array(ent, data[])
 	set_weapon_float(ent, REPL_CSWA_SPEEDDELAY, data[STRUCT_CSWA_SPEEDDELAY]);
 	set_weapon_float(ent, REPL_CSWA_DAMAGE, data[STRUCT_CSWA_DAMAGE]);
 	set_weapon_float(ent, REPL_CSWA_RELOADTIME, data[STRUCT_CSWA_RELOADTIME]);
+	set_weapon_float(ent, REPL_CSWA_RECOIL, data[STRUCT_CSWA_RECOIL]);
 	set_weapon_integer(ent, REPL_CSWA_CLIP, data[STRUCT_CSWA_CLIP]);
 	set_weapon_integer(ent, REPL_CSWA_MAXCLIP, data[STRUCT_CSWA_MAXCLIP]);
 	set_weapon_integer(ent, REPL_CSWA_AMMO, data[STRUCT_CSWA_AMMO]);
@@ -521,16 +567,6 @@ stock set_weapon_array(ent, data[])
 	set_weapon_edict(ent, REPL_CSWA_SILENCED, data[STRUCT_CSWA_SILENCED]);
 	set_weapon_edict(ent, REPL_CSWA_SET, data[STRUCT_CSWA_SET]);
 	set_weapon_edict(ent, REPL_CSWA_ITEMID, data[STRUCT_CSWA_ITEMID]);
-}
-
-stock UTIL_PlayWeaponAnimation(const id, const seq)
-{
-	set_pev(id, pev_weaponanim, seq);
-	
-	message_begin(MSG_ONE_UNRELIABLE, SVC_WEAPONANIM, _, id);
-	write_byte(seq);
-	write_byte(pev(id, pev_body));
-	message_end();
 }
 
 // API YAY

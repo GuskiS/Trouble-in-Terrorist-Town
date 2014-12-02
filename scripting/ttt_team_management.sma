@@ -5,14 +5,12 @@
 #include <fun>
 #include <ttt>
 
-new cvar_end_game_godmode;
-const m_iNumSpawns = 365;
+#define m_iNumSpawns 365
 
 public plugin_init()
 {
 	register_plugin("[TTT] Join team management", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_end_game_godmode = my_register_cvar("ttt_end_game_godmode", "1");
 	register_message(get_user_msgid("ShowMenu"), "Message_ShowMenu");
 	register_message(get_user_msgid("VGUIMenu"), "Message_VGUIMenu");
 
@@ -22,7 +20,7 @@ public plugin_init()
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == STARTED)
+	if(gamemode == GAME_STARTED)
 	{
 		new num, id;
 		static players[32];
@@ -34,32 +32,13 @@ public ttt_gamemode(gamemode)
 		}
 	}
 
-	if(gamemode == STARTED || gamemode == ENDED || gamemode == OFF)
-	{
-		new num, id, cvar = get_pcvar_num(cvar_end_game_godmode);
-		static players[32];
-		get_players(players, num);
-		for(--num; num >= 0; num--)
-		{
-			id = players[num];
-			if(gamemode == STARTED || gamemode == OFF)
-				set_user_godmode(id, 0);
-			else if(gamemode == ENDED && cvar)
-				set_task(0.1, "set_godmode", id);
-		}
-
-		if(gamemode == ENDED)
-			set_task(0.1, "randomize_teams");
-	}
+	if(gamemode == GAME_ENDED)
+		set_task(0.1, "randomize_teams");
 }
-
-public set_godmode(id)
-	if(is_user_alive(id))
-		set_user_godmode(id, 1);
 
 public client_putinserver(id)
 {
-	if(ttt_get_game_state() == STARTED && !is_user_bot(id))
+	if(ttt_get_gamemode() == GAME_STARTED && !is_user_bot(id))
 		set_pdata_int(id, m_iNumSpawns, 1);
 }
 
@@ -118,7 +97,7 @@ public cmd_chooseteam(id)
 
 public randomize_teams()
 {
-	if(ttt_get_game_state() != ENDED)
+	if(ttt_get_gamemode() != GAME_ENDED)
 		return;
 
 	static players[32];

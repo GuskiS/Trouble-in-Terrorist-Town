@@ -35,9 +35,15 @@ public plugin_init()
 			strtok(right, left, charsmax(left), right, charsmax(right), ''');
 			ArrayPushString(g_aFileName, left);
 		}
-	}   
+	}
 	while(next_file(handle, filename, charsmax(filename)));
 	close_dir(handle);
+}
+
+public plugin_end()
+{
+	ArrayDestroy(g_aFilePath);
+	ArrayDestroy(g_aFileName);
 }
 
 public client_putinserver(id)
@@ -55,7 +61,8 @@ public ttt_rules_show(id)
 	new menu = menu_create("\rRules", "ttt_rules_handler");
 
 	static data[5], option[20];
-	for(new i = 0; i < ArraySize(g_aFileName); i++)
+	new size = ArraySize(g_aFileName);
+	for(new i = 0; i < size; i++)
 	{
 		ArrayGetString(g_aFileName, i, option, charsmax(option));
 		num_to_str(i, data, charsmax(data));

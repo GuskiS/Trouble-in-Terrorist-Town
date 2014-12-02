@@ -17,8 +17,8 @@ public hook_sayteam(id)
 	if(message[0] == '@' || equal(message, "") || equal(message, " "))
 		return PLUGIN_HANDLED;
 
-	new spec = ttt_get_special_state(id);
-	if(spec == TRAITOR || spec == DETECTIVE)
+	new spec = ttt_get_playerstate(id);
+	if(spec == PC_TRAITOR || spec == PC_DETECTIVE)
 	{
 		static chat[192], name[32];
 		get_user_name(id, name, charsmax(name));
@@ -30,7 +30,7 @@ public hook_sayteam(id)
 		for(--num; num >= 0; num--)
 		{
 			i = players[num];
-			if(ttt_get_special_state(i) != spec) continue;
+			if(ttt_get_playerstate(i) != spec) continue;
 
 			message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("SayText"), _, i);
 			write_byte(id);

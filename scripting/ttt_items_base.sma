@@ -2,23 +2,24 @@
 #include <cstrike>
 #include <ttt>
 
-enum _:ItemData
+enum _:ITEM_DATA
 {
-    ItemName[TTT_ITEMNAME],
-    ItemCost,
-	ItemTeam
+	ITEM_NAME[TTT_ITEMLENGHT],
+	ITEM_COST,
+	ITEM_TEAM
 }
 
-new g_iTotalItems = -1, g_iSetupItems = -1;
-new g_iItemForward, Array:g_iItems, Array:g_iSetup;
+new g_iTotalItems, g_iSetupItems = -1;
+new g_iItemForward, Array:g_aSetup;
+new g_szItems[TTT_MAXSHOP][ITEM_DATA];
 
 new const g_szBuyCommands[][] =  
 { 
-    "buy", "buyequip", "usp", "glock", "deagle", "p228", "elites", "fn57", "m3", "xm1014", "mp5", "tmp", "p90", "mac10", "ump45", "ak47",  
-    "galil", "famas", "sg552", "m4a1", "aug", "scout", "awp", "g3sg1", "sg550", "m249", "vest", "vesthelm", "flash", "hegren", 
-    "sgren", "defuser", "nvgs", "shield", "primammo", "secammo", "km45", "9x19mm", "nighthawk", "228compact", "12gauge", 
-    "autoshotgun", "smg", "mp", "c90", "cv47", "defender", "clarion", "krieg552", "bullpup", "magnum", "d3au1", "krieg550", 
-    "buyammo1", "buyammo2", "cl_autobuy", "cl_rebuy", "cl_setautobuy", "cl_setrebuy"
+	"buy", "buyequip", "usp", "glock", "deagle", "p228", "elites", "fn57", "m3", "xm1014", "mp5", "tmp", "p90", "mac10", "ump45", "ak47",  
+	"galil", "famas", "sg552", "m4a1", "aug", "scout", "awp", "g3sg1", "sg550", "m249", "vest", "vesthelm", "flash", "hegren", 
+	"sgren", "defuser", "nvgs", "shield", "primammo", "secammo", "km45", "9x19mm", "nighthawk", "228compact", "12gauge", 
+	"autoshotgun", "smg", "mp", "c90", "cv47", "defender", "clarion", "krieg552", "bullpup", "magnum", "d3au1", "krieg550", 
+	"buyammo1", "buyammo2", "cl_autobuy", "cl_rebuy", "cl_setautobuy", "cl_setrebuy"
 };
 
 public plugin_precache()
@@ -31,10 +32,15 @@ public plugin_init()
 	register_clcmd("say /buy", "ttt_buymenu_show");
 	register_clcmd("say_team /buy", "ttt_buymenu_show");
 
-	g_iItems = ArrayCreate(ItemData);
-	g_iSetup = ArrayCreate(SetupData);
+	//COULD NOT WORK
+	g_aSetup = ArrayCreate(SETUP_DATA);
 
 	g_iItemForward = CreateMultiForward("ttt_item_selected", ET_STOP, FP_CELL, FP_CELL, FP_STRING, FP_CELL);
+}
+
+public plugin_end()
+{
+	ArrayDestroy(g_aSetup);
 }
 
 public plugin_natives()
@@ -47,12 +53,13 @@ public plugin_natives()
 	register_native("ttt_item_setup_get", "_item_setup_get");
 	register_native("ttt_is_item_setup", "_is_item_setup");
 	register_native("ttt_get_item_name", "_get_item_name");
+	register_native("ttt_get_item_id", "_get_item_id");
 }
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == PREPARING)
-		ArrayClear(g_iSetup);
+	if(gamemode == GAME_PREPARING)
+		ArrayClear(g_aSetup);
 }
 
 public client_command(id)
@@ -96,25 +103,24 @@ public ttt_buymenu_show(id)
 	}
 
 	new inno;
-	static data[ItemData], item[128], num[3];
+	static item[128], num[3];
 	new menu = menu_create("\rTTT Buy menu", "ttt_buymenu_handle");
-	new team = ttt_get_special_state(id);
+	new team = ttt_get_playerstate(id);
 	for(new i = 0; i < g_iTotalItems; i++)
-    {
-		ArrayGetArray(g_iItems, i, data);
-		if(data[ItemCost] == -1) continue;
-		if(data[ItemTeam] == INNOCENT)
+	{
+		if(g_szItems[i][ITEM_COST] == -1) continue;
+		if(g_szItems[i][ITEM_TEAM] == PC_INNOCENT)
 			inno++;
 
-		if((data[ItemTeam] == SPECIAL && (team == TRAITOR || team == DETECTIVE)) || team == data[ItemTeam])
+		if((g_szItems[i][ITEM_TEAM] == PC_SPECIAL && (team == PC_TRAITOR || team == PC_DETECTIVE)) || team == g_szItems[i][ITEM_TEAM])
 		{
-			formatex(item, charsmax(item), "%s\R\y%i												", data[ItemName], data[ItemCost]);
+			formatex(item, charsmax(item), "%s\R\y%i												", g_szItems[i][ITEM_NAME], g_szItems[i][ITEM_COST]);
 			num_to_str(i, num, charsmax(num));
 			menu_additem(menu, item, num);
 		}
-    }
+	}
 
-	if(!inno && team == INNOCENT)
+	if(!inno && team == PC_INNOCENT)
 	{
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_NOITEMSTEAM", id, special_names[team]);
 		return PLUGIN_HANDLED;
@@ -140,59 +146,57 @@ public ttt_buymenu_handle(id, menu, item)
 	menu_destroy(menu);
 
 	new itemid = str_to_num(num);
-	static data[ItemData];
-	ArrayGetArray(g_iItems, itemid, data);
 
-	new player_state = ttt_get_special_state(id);
-	if((data[ItemTeam] == SPECIAL && player_state != TRAITOR && player_state != DETECTIVE) || (player_state != data[ItemTeam] && SPECIAL != data[ItemTeam]))
+	new player_state = ttt_get_playerstate(id);
+	if((g_szItems[itemid][ITEM_TEAM] == PC_SPECIAL && player_state != PC_TRAITOR && player_state != PC_DETECTIVE) || (player_state != g_szItems[itemid][ITEM_TEAM] && PC_SPECIAL != g_szItems[itemid][ITEM_TEAM]))
 	{
-		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM3", id, special_names[data[ItemTeam]], data[ItemName]);
+		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM3", id, special_names[g_szItems[itemid][ITEM_TEAM]], g_szItems[itemid][ITEM_NAME]);
 		return PLUGIN_HANDLED;
 	}
 
 	new credits = ttt_get_playerdata(id, PD_CREDITS);
-	if(credits < data[ItemCost])
+	if(credits < g_szItems[itemid][ITEM_COST])
 	{
-		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM4", data[ItemName], data[ItemCost]);
+		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM4", g_szItems[itemid][ITEM_NAME], g_szItems[itemid][ITEM_COST]);
 		return PLUGIN_HANDLED;
 	}
 
 	new ret;
-	ExecuteForward(g_iItemForward, ret, id, itemid, data[ItemName], data[ItemCost]);
+	ExecuteForward(g_iItemForward, ret, id, itemid, g_szItems[itemid][ITEM_NAME], g_szItems[itemid][ITEM_COST]);
 
 	if(ret == PLUGIN_HANDLED)
 	{
 		//emit_sound(id, CHAN_WEAPON, "items/gunpickup2.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
 		client_cmd(id, "spk ^"%s^"", "items/gunpickup2.wav");
-		ttt_set_playerdata(id, PD_CREDITS, credits-data[ItemCost]);
+		ttt_set_playerdata(id, PD_CREDITS, credits-g_szItems[itemid][ITEM_COST]);
+	
+		static name[32];
+		get_user_name(id, name, charsmax(name));
+		ttt_log_to_file(LOG_ITEM, "Player %s bought item %s with ID %d", name, g_szItems[itemid][ITEM_NAME], itemid);
 	}
-
-	static msg[70], name[32];
-	get_user_name(id, name, charsmax(name));
-	formatex(msg, charsmax(msg), "Player %s bought item %s with ID %d", name, data[ItemName], itemid);
-	ttt_log_to_file(LOG_ITEM, msg);
 
 	return PLUGIN_HANDLED;
 }
 
-public _buymenu_add(plugin, param)
+public _buymenu_add(plugin, params)
 {
-	static data[ItemData];
-	get_string(1, data[ItemName], charsmax(data[ItemName]));
-	data[ItemCost] = get_param(2);
-	data[ItemTeam] = get_param(3);
+	if(params != 3)
+		return ttt_log_api_error("ttt_buymenu_add needs 3 params(p2: %d, p3: %d)", plugin, params, get_param(2), get_param(3)) -1;
 
-	ArrayPushArray(g_iItems, data);
-	if(g_iTotalItems == -1)
-		g_iTotalItems = 0;
+	get_string(1, g_szItems[g_iTotalItems][ITEM_NAME], charsmax(g_szItems[][ITEM_NAME]));
+	g_szItems[g_iTotalItems][ITEM_COST] = get_param(2);
+	g_szItems[g_iTotalItems][ITEM_TEAM] = get_param(3);
 
 	g_iTotalItems++;
 	return (g_iTotalItems - 1);
 }
 
-public _item_setup_add(plugin, param)
+public _item_setup_add(plugin, params)
 {
-	static data[SetupData];
+	if(params != 7)
+		return ttt_log_api_error("ttt_item_setup_add needs 7 params", plugin, params) -1;
+
+	static data[SETUP_DATA];
 	data[SETUP_ITEMID] = get_param(1);
 	data[SETUP_ITEMENT] = get_param(2);
 	data[SETUP_ITEMTIME] = get_param(3);
@@ -201,32 +205,38 @@ public _item_setup_add(plugin, param)
 	data[SETUP_ITEMACTIVE] = get_param(6);
 	get_string(7, data[SETUP_ITEMNAME], charsmax(data[SETUP_ITEMNAME]));
 
-	ArrayPushArray(g_iSetup, data);
-	g_iSetupItems = ArraySize(g_iSetup);
+	ArrayPushArray(g_aSetup, data);
+	g_iSetupItems = ArraySize(g_aSetup);
 
 	return (g_iSetupItems -1);
 }
 
-public _item_setup_remove(plugin, param)
+public _item_setup_remove(plugin, params)
 {
+	if(params != 1)
+		return ttt_log_api_error("ttt_item_setup_remove needs 1 param(p1: %d)", plugin, params, get_param(1)) -1;
+
 	new item = get_param(1);
 	if(item > -1)
 	{
-		new data[SetupData] = {0, 0, ...};
-		ArraySetArray(g_iSetup, item, data);
+		new data[SETUP_DATA] = {0, 0, ...};
+		ArraySetArray(g_aSetup, item, data);
 		return 1;
 	}
 
 	return -1;
 }
 
-public _item_setup_get(plugin, param)
+public _item_setup_get(plugin, params)
 {
+	if(params != 2)
+		return ttt_log_api_error("ttt_item_setup_get needs 2 params(p1: %d)", plugin, params, get_param(1)) -1;
+
 	new item = get_param(1);
 	if(item > -1)
 	{
-		static data[SetupData];
-		ArrayGetArray(g_iSetup, item, data);
+		static data[SETUP_DATA];
+		ArrayGetArray(g_aSetup, item, data);
 
 		set_array(2, data, sizeof(data));
 		return 1;
@@ -235,52 +245,66 @@ public _item_setup_get(plugin, param)
 	return -1;
 }
 
-public _item_setup_update(plugin, param)
+public _item_setup_update(plugin, params)
 {
+	if(params != 2)
+		return ttt_log_api_error("ttt_item_setup_update needs 2 params(p1: %d)", plugin, params, get_param(1)) -1;
+
 	new item = get_param(1);
 	if(item > -1)
 	{
-		static data[SetupData];
+		static data[SETUP_DATA];
 		get_array(2, data, sizeof(data));
 
-		ArraySetArray(g_iSetup, item, data);
+		ArraySetArray(g_aSetup, item, data);
 		return 1;
 	}
 
 	return -1;
 }
 
-public _is_item_setup(plugin, param)
+public _is_item_setup(plugin, params)
 {
-	if(param != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_is_item_setup)") -1;
+	if(params != 1)
+		return ttt_log_api_error("ttt_is_item_setup needs 1 param(p1: %d)", plugin, params, get_param(1));
 
-	if(g_iSetupItems > 0 && ArraySize(g_iSetup))
+
+	if(g_iSetupItems > 0 && ArraySize(g_aSetup))
 	{
 		new ent = get_param(1);
-		new i, data[SetupData], msg = -1;
-		for(i = 0; i < g_iSetupItems-1; i++)
+		new data[SETUP_DATA];
+		for(new i = 0; i < g_iSetupItems-1; i++)
 		{
-			ArrayGetArray(g_iSetup, i, data);
+			ArrayGetArray(g_aSetup, i, data);
 			if(ent == data[SETUP_ITEMENT])
-			{
-				msg = i;
-				break;
-			}
+				return i;
 		}
-		return msg;
 	}
 
 	return -1;
 }
 
-public _get_item_name(plugin, param)
+public _get_item_name(plugin, params)
 {
-	if(param != 3)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_item_name)") -1;
+	if(params != 3)
+		return ttt_log_api_error("ttt_get_item_name needs 3 params(p1: %d, p3: %d)", plugin, params, get_param(1), get_param(3));
 
-	new data[SetupData];
-	ArrayGetArray(g_iItems, get_param(1), data);
-	set_string(2, data[ItemName], get_param(3));
+	set_string(2, g_szItems[get_param(1)][ITEM_NAME], get_param(3));
 	return 1;
+}
+
+public _get_item_id(plugin, params)
+{
+	if(params != 1)
+		return ttt_log_api_error("ttt_get_item_id needs 1 param(p1: %d)", plugin, params, get_param(1)) -2;
+
+	new name[TTT_ITEMLENGHT];
+	get_string(1, name, charsmax(name));
+	for(new i = 0; i < g_iTotalItems-1; i++)
+	{
+		if(equal(g_szItems[i][ITEM_NAME], name))
+			return i;
+	}
+
+	return -2;
 }

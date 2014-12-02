@@ -9,10 +9,17 @@
 #define TASK_SURVIVAL 1111
 #define TASK_ORPHEU 2222
 #define m_bitsDamageType 76
-#define OFFSET_LINUX_WEAPONS 4 
-new const m_rgpPlayerItems_CWeaponBox[6] = {34, 35, ...};
+#define m_flPainShock		108
+#define OFFSET_LINUX_WEAPONS 4
+#define OFFSET_LINUX_PLAYERS 5
 
-new const g_szGameModes[Game][] =
+enum
+{
+	KARMA_KILL,
+	KARMA_DMG
+}
+
+new const g_szGameModes[GAME_MODE][] =
 {
 	"unset",
 	"off",
@@ -27,20 +34,21 @@ const DMG_SOMETHING = DMG_GENERIC | DMG_SLASH | DMG_BURN
 	| DMG_NERVEGAS | DMG_POISON | DMG_RADIATION | DMG_ACID;
 	
 // RESETABLE
-new g_iGame, g_iSpecialCount[Special], g_iRoundSpecial[Special];
-new g_iStoredInfo[33][PlayerData];
+new g_iGlobalInfo[GLOBAL_INFO], g_iSpecialCount[PLAYER_CLASS], g_iRoundSpecial[PLAYER_CLASS];
+new g_iPlayerData[33][PLAYER_DATA];
 new g_iMultiCount = 1, g_iMultiSeconds = 1;
-new Trie:g_tCvarsToFile;
+new Trie:g_tCvarsToFile, g_iTrieSize;
 //
 // NON RESETABLE
 new cvar_traitors, cvar_detectives, cvar_karma_damage,
 	cvar_preparation_time, cvar_karma_multi, cvar_karma_start,
 	cvar_credits_tra_start, cvar_credits_tra_count, cvar_credits_tra_detkill, cvar_credits_tra_countkill,
 	cvar_credits_det_start, cvar_credits_tra_repeat, cvar_damage_modifier,
-	cvar_credits_det_bonussurv, cvar_credits_det_survtime, cvar_show_deathmessage;
+	cvar_credits_det_bonussurv, cvar_credits_det_survtime, cvar_show_deathmessage, cvar_detective_glow;
 new g_Msg_TeamInfo, g_iGameModeForward;
 new Float:g_fFreezeTime, Float:g_fRoundTime, Float:g_fRoundStart;
 new g_iMaxDetectives, g_iMaxTraitors, g_iMaxPlayers;
+new g_iExceptionItems[10] = {-2, -2, ...};
 //
 
 public plugin_init()
@@ -64,6 +72,7 @@ public plugin_init()
 	cvar_karma_start				= mynew_register_cvar("ttt_karma_start",				"500");
 	cvar_show_deathmessage			= mynew_register_cvar("ttt_show_deathmessage",			"abeg");
 	cvar_damage_modifier			= mynew_register_cvar("ttt_damage_modifier",			"1.0");
+	cvar_detective_glow				= mynew_register_cvar("ttt_detective_glow",				"1");
 
 	g_Msg_TeamInfo		=	get_user_msgid("TeamInfo");
 
@@ -75,35 +84,38 @@ public plugin_init()
 
 	register_forward(FM_AddToFullPack, "Forward_AddToFullPack_post", 1);
 
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_pre", 0, true);
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_post", 1, true);
-	RegisterHam(Ham_TakeDamage, "player", "Ham_TakeDamage_pre", 0, true);
-	RegisterHam(Ham_TakeDamage, "player", "Ham_TakeDamage_post", 1, true);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
+	RegisterHamPlayer(Ham_TakeDamage, "Ham_TakeDamage_pre", 0);
+	RegisterHamPlayer(Ham_TakeDamage, "Ham_TakeDamage_post", 1);
+	RegisterHamPlayer(Ham_TraceAttack, "Ham_TraceAttack_pre", 0);
 
 	g_iGameModeForward = CreateMultiForward("ttt_gamemode", ET_IGNORE, FP_CELL);
 
 	g_iMaxPlayers = get_maxplayers();
+	#if AMXX_VERSION_NUM < 183
+	register_dictionary("ttt_c.txt");
+	#else
 	register_dictionary("ttt.txt");
+	#endif
 }
 
 public plugin_end()
-	set_game_state(PREPARING);
+	set_game_state(GAME_PREPARING);
 
 public plugin_natives()
 {
 	register_library("ttt");
-	register_native("ttt_get_special_state", "_get_special_state");
-	register_native("ttt_set_special_state", "_set_special_state");
-	register_native("ttt_get_special_count", "_get_special_count");
-	register_native("ttt_set_special_count", "_set_special_count");
-	register_native("get_roundtime", "_get_roundtime");
+	register_native("ttt_get_roundtime", "_get_roundtime");
 	register_native("ttt_get_playerdata", "_get_playerdata");
 	register_native("ttt_set_playerdata", "_set_playerdata");
-	register_native("ttt_set_karma_modifier", "_set_karma_modifier");
-	register_native("ttt_get_game_state", "_get_game_state");
-	register_native("ttt_set_game_state", "_set_game_state");
-	register_native("ttt_get_special_alive", "_get_special_alive");
+	register_native("ttt_get_globalinfo", "_get_globalinfo");
+	register_native("ttt_set_globalinfo", "_set_globalinfo");
+	register_native("ttt_set_playerstate", "_set_playerstate");
+	register_native("ttt_set_gamemode", "_set_gamemode");
+	register_native("ttt_get_specialcount", "_get_specialcount");
 	register_native("ttt_register_cvar", "_register_cvar");
+	register_native("ttt_item_exception", "_item_exception");
 }
 
 public plugin_cfg()
@@ -116,29 +128,28 @@ public plugin_cfg()
 public client_disconnect(id)
 {
 	set_task(0.5, "reset_client", id);
-	set_special_state(id, NONE);
+	set_special_state(id, PC_NONE);
 }
 
 public client_putinserver(id)
 {
-	if(is_user_bot(id))
-		server_cmd("kick #%i %s", get_user_userid(id), "Bot player!");
+	// if(is_user_bot(id))
+	// 	server_cmd("kick #%i %s", get_user_userid(id), "Bot player!");
 
 	reset_client(id);
-	g_iStoredInfo[id][PD_KILLEDBY] = -1;
+	g_iPlayerData[id][PD_KILLEDBY] = -1;
 	set_task(11.0, "startup_info", id);
 
-	static karma;
-	karma = get_pcvar_num(cvar_karma_start);
-	g_iStoredInfo[id][PD_KARMATEMP] = karma;
-	g_iStoredInfo[id][PD_KARMA] = karma;
+	new karma = get_pcvar_num(cvar_karma_start);
+	g_iPlayerData[id][PD_KARMATEMP] = karma;
+	g_iPlayerData[id][PD_KARMA] = karma;
 }
 
 public startup_info(id)
 {
-	if(get_game_state() == STARTED && !is_user_alive(id))
+	if(get_game_state() == GAME_STARTED && !is_user_alive(id))
 	{
-		set_special_state(id, DEAD);
+		set_special_state(id, PC_DEAD);
 		Show_All();
 	}
 
@@ -148,16 +159,16 @@ public startup_info(id)
 
 public Event_RoundRestart()
 {
-	if(get_game_state() != RESTARTING)
+	if(get_game_state() != GAME_RESTARTING)
 	{
 		reset_all();
-		set_game_state(RESTARTING);
+		set_game_state(GAME_RESTARTING);
 	}
 }
 
 public Event_HLTV()
 {
-	if(get_game_state() != PREPARING)
+	if(get_game_state() != GAME_PREPARING)
 	{
 		new cvar = get_pcvar_num(cvar_preparation_time);
 		if(!cvar)
@@ -169,7 +180,7 @@ public Event_HLTV()
 		g_fRoundStart = get_gametime();
 		reset_all();
 
-		set_game_state(PREPARING);
+		set_game_state(GAME_PREPARING);
 	}
 }
 
@@ -178,10 +189,10 @@ public set_timer()
 
 public Event_EndRound()
 {
-	if(get_game_state() != ENDED)
+	if(get_game_state() != GAME_ENDED)
 	{
 		reset_all();
-		set_game_state(ENDED);
+		set_game_state(GAME_ENDED);
 	}
 }
 
@@ -199,9 +210,11 @@ public do_the_magic()
 	new num;
 	static players[32];
 	get_players(players, num);
+	ttt_log_to_file(LOG_DEFAULT, "Current player count %d", num);
+
 	if(num < 3)
 	{
-		set_game_state(OFF);
+		set_game_state(GAME_OFF);
 		client_print_color(0, print_team_default, "%s %L", TTT_TAG, LANG_PLAYER, "TTT_MODOFF1");
 		return;
 	}
@@ -232,21 +245,20 @@ public do_the_magic()
 	{
 		id = players[num];
 		if(!is_user_alive(id)) continue;
-		g_iStoredInfo[id][PD_KARMA] = g_iStoredInfo[id][PD_KARMATEMP];
+		g_iPlayerData[id][PD_KARMA] = g_iPlayerData[id][PD_KARMATEMP];
 
-		if(get_special_state(id) != DETECTIVE && get_special_state(id) != TRAITOR)
+		if(get_special_state(id) != PC_DETECTIVE && get_special_state(id) != PC_TRAITOR)
 		{
-			set_special_state(id, INNOCENT);
-			ttt_set_stats(id, STATS_INN, ttt_get_player_stat(id, STATS_INN)+1);
+			set_special_state(id, PC_INNOCENT);
 			cs_set_player_team(id, CS_TEAM_CT, false);
 		}
 
-		entity_set_float(id, EV_FL_frags, float(g_iStoredInfo[id][PD_KARMA]));
-		cs_set_user_deaths(id, g_iStoredInfo[id][PD_KILLEDDEATHS]);
+		entity_set_float(id, EV_FL_frags, float(g_iPlayerData[id][PD_KARMA]));
+		cs_set_user_deaths(id, g_iPlayerData[id][PD_KILLEDDEATHS]);
 	}
 
 	new i;
-	for(i = 0; i < Special; i++)
+	for(i = 0; i < PLAYER_CLASS; i++)
 		g_iRoundSpecial[i] = get_special_count(i);
 
 	set_task(get_pcvar_float(cvar_credits_det_survtime), "give_survival_credits", TASK_SURVIVAL, _, _, "b");
@@ -258,7 +270,7 @@ public do_the_magic()
 		set_fake_team(id, get_special_state(id));
 	}
 
-	set_game_state(STARTED);
+	set_game_state(GAME_STARTED);
 }
 
 public Event_DeathMsg()
@@ -271,19 +283,19 @@ public Event_DeathMsg()
 	if(is_user_connected(killer))
 	{
 		static newweap[32];
-		g_iStoredInfo[victim][PD_KILLEDBY] = killer;
-		g_iStoredInfo[killer][PD_KILLCOUNT]++;
+		g_iPlayerData[victim][PD_KILLEDBY] = killer;
+		g_iPlayerData[killer][PD_KILLCOUNT]++;
 		formatex(newweap, charsmax(newweap), "weapon_%s", weapon);
-		g_iStoredInfo[victim][PD_KILLEDWEAP] = get_weaponid(newweap);
+		g_iPlayerData[victim][PD_KILLEDWEAP] = get_weaponid(newweap);
 	}
-	
+
 	static cvar[10];
 	get_pcvar_string(cvar_show_deathmessage, cvar, charsmax(cvar));
 	if(cvar[0])
 		ttt_make_deathmsg(killer, victim, read_data(3), weapon, read_flags(cvar));
 
 	if(equali(weapon, "worldspawn"))
-		g_iStoredInfo[victim][PD_KILLEDWEAP] = DEATHS_SUICIDE;
+		g_iPlayerData[victim][PD_KILLEDWEAP] = DEATHS_SUICIDE;
 }
 
 public Ham_Killed_pre(victim, killer, shouldgib)
@@ -294,13 +306,13 @@ public Ham_Killed_pre(victim, killer, shouldgib)
 	if(get_pdata_int(victim, m_bitsDamageType) & DMG_SOMETHING)
 		add_death_info(victim, killer, get_pdata_int(victim, m_bitsDamageType, 5));
 
-	g_iStoredInfo[victim][PD_KILLEDSTATE] = get_special_state(victim);
-	g_iStoredInfo[victim][PD_KILLEDTIME] = floatround(floatmul(g_fRoundTime, 60.0) - get_round_time());
-	g_iStoredInfo[victim][PD_KILLEDDEATHS]++;
+	g_iPlayerData[victim][PD_KILLEDSTATE] = get_special_state(victim);
+	g_iPlayerData[victim][PD_KILLEDTIME] = floatround(floatmul(g_fRoundTime, 60.0) - get_round_time());
+	g_iPlayerData[victim][PD_KILLEDDEATHS]++;
 
-	karma_modifier(killer, victim, g_iStoredInfo[victim][PD_KARMATEMP], 1, 0);
+	//karma_modifier(killer, victim, g_iPlayerData[victim][PD_KARMATEMP], 1, 0);
 
-	set_special_state(victim, DEAD);
+	set_special_state(victim, PC_DEAD);
 	return HAM_HANDLED;
 }
 
@@ -309,12 +321,12 @@ public add_death_info(victim, killer, dmg)
 	new msg = get_deathmessage(0, dmg);
 	if(is_user_connected(killer))
 	{
-		g_iStoredInfo[victim][PD_KILLEDBY] = killer;
-		g_iStoredInfo[killer][PD_KILLCOUNT]++;
+		g_iPlayerData[victim][PD_KILLEDBY] = killer;
+		g_iPlayerData[killer][PD_KILLCOUNT]++;
 	}
-	else g_iStoredInfo[victim][PD_KILLEDBY] = msg;
+	else g_iPlayerData[victim][PD_KILLEDBY] = msg;
 
-	g_iStoredInfo[victim][PD_KILLEDWEAP] = msg;
+	g_iPlayerData[victim][PD_KILLEDWEAP] = msg;
 }
 
 public get_deathmessage(id, dmg)
@@ -347,7 +359,7 @@ public get_deathmessage(id, dmg)
 			dmg = DEATHS_ACID;
 		else dmg = DEATHS_SUICIDE;
 	}
-	else dmg = g_iStoredInfo[id][PD_KILLEDWEAP];
+	else dmg = g_iPlayerData[id][PD_KILLEDWEAP];
 
 	return dmg;
 }
@@ -357,24 +369,22 @@ public Ham_Killed_post(victim, killer, shouldgib)
 	if(my_return_check(victim))
 		return;
 
-	if(!(0 <= killer <= g_iMaxPlayers))
-		killer = 0;
-
-	new num, i, bonus;
+	new bonus;
 	static players[32], name[32];
-	if(float(get_special_count(DEAD)+get_special_count(TRAITOR)-g_iRoundSpecial[TRAITOR])/float(g_iRoundSpecial[INNOCENT]+g_iRoundSpecial[DETECTIVE])
+	if(float(get_special_count(PC_DEAD)+get_special_count(PC_TRAITOR)-g_iRoundSpecial[PC_TRAITOR])/float(g_iRoundSpecial[PC_INNOCENT]+g_iRoundSpecial[PC_DETECTIVE])
 	> get_pcvar_float(cvar_credits_tra_count) * g_iMultiCount)
 	{
+		new num, i;
 		bonus = get_pcvar_num(cvar_credits_tra_countkill);
 		get_players(players, num, "a");
 		for(--num; num >= 0; num--)
 		{
 			i = players[num];
 
-			if(get_special_state(i) == TRAITOR)
+			if(get_special_state(i) == PC_TRAITOR)
 			{
-				g_iStoredInfo[i][PD_CREDITS] += bonus;
-				client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD1", bonus, floatround(get_pcvar_float(cvar_credits_tra_count)* g_iMultiCount*100), i, special_names[INNOCENT]);
+				g_iPlayerData[i][PD_CREDITS] += bonus;
+				client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD1", bonus, floatround(get_pcvar_float(cvar_credits_tra_count)* g_iMultiCount*100), i, special_names[PC_INNOCENT]);
 			}
 		}
 
@@ -383,51 +393,63 @@ public Ham_Killed_post(victim, killer, shouldgib)
 		else g_iMultiCount = 100;
 	}
 
-	new killer_state = get_special_state(killer), victim_state = get_special_alive(victim);
-	if(killer_state == TRAITOR)
+	if(is_user_connected(killer))
 	{
-		if(victim_state == DETECTIVE)
+		new killer_state = get_special_alive(killer), victim_state = get_special_alive(victim);
+		if(killer_state == PC_TRAITOR && victim_state == PC_DETECTIVE)
 		{
 			bonus = get_pcvar_num(cvar_credits_tra_detkill);
-			g_iStoredInfo[killer][PD_CREDITS] += bonus;
+			g_iPlayerData[killer][PD_CREDITS] += bonus;
 			get_user_name(victim, name, charsmax(name));
-			client_print_color(killer, print_team_default, "%s %L", TTT_TAG, killer, "TTT_AWARD2", bonus, killer, special_names[DETECTIVE], name);
+			client_print_color(killer, print_team_default, "%s %L", TTT_TAG, killer, "TTT_AWARD2", bonus, killer, special_names[PC_DETECTIVE], name);
 		}
-		
-		if(victim_state == DETECTIVE || victim_state == INNOCENT)
-			ttt_set_stats(killer, STATS_KILLS_T, ttt_get_player_stat(killer, STATS_KILLS_T)+1);
+
+		if(killer != victim)
+		{
+			get_user_name(victim, name, charsmax(name));
+			if(killer_state == PC_INNOCENT || killer_state == PC_DETECTIVE)
+				client_print_color(killer, print_team_default, "%s %L", TTT_TAG, killer, "TTT_KILLED2", name);
+			else if(killer_state == PC_TRAITOR || victim_state == PC_TRAITOR)
+				client_print_color(killer, print_team_default, "%s %L", TTT_TAG, killer, "TTT_KILLED3", name, killer, special_names[victim_state]);
+
+			get_user_name(killer, name, charsmax(name));
+			client_print_color(victim, print_team_default, "%s %L", TTT_TAG, victim, "TTT_KILLED1", name, victim, special_names[killer_state]);
+		}
 	}
 
-	if(victim_state == TRAITOR)
+	new killed_item = killed_with_item(victim);
+	if(killed_item)
 	{
-		if(killer_state == INNOCENT)
-			ttt_set_stats(killer, STATS_KILLS_I, ttt_get_player_stat(killer, STATS_KILLS_I)+1);
-		else if(killer_state == DETECTIVE)
-			ttt_set_stats(killer, STATS_KILLS_D, ttt_get_player_stat(killer, STATS_KILLS_D)+1);
+		if(is_user_connected(killer))
+		{
+			if(victim != killer && get_special_alive(killer) != get_special_alive(victim))
+				karma_modifier(killer, victim, KARMA_KILL);
+		}
 	}
+	else karma_modifier(killer, victim, KARMA_KILL);
 
-	if(is_user_connected(killer) && killer != victim)
-	{
-		get_user_name(killer, name, charsmax(name));
-		client_print_color(victim, print_team_default, "%s %L", TTT_TAG, victim, "TTT_KILLED1", name, victim, special_names[get_special_alive(killer)]);
-	}
-	else client_print_color(victim, print_team_default, "%s %L", TTT_TAG, victim, "TTT_SUICIDE");
-
-	if(killer != 0 && killer != victim)
-	{
-		get_user_name(victim, name, charsmax(name));
-		if(killer_state == INNOCENT || killer_state == DETECTIVE)
-			client_print_color(killer, print_team_default, "%s %L", TTT_TAG, killer, "TTT_KILLED2", name);
-		else if(killer_state == TRAITOR || victim_state == TRAITOR)
-			client_print_color(killer, print_team_default, "%s %L", TTT_TAG, killer, "TTT_KILLED3", name, killer, special_names[victim_state]);
-	}
+	if(!killed_item && (!is_user_connected(killer) || killer == victim))
+		client_print_color(victim, print_team_default, "%s %L", TTT_TAG, victim, "TTT_SUICIDE");
 
 	set_task(0.1, "Show_All");
 }
 
+public killed_with_item(victim)
+{
+	new item = get_player_data(victim, PD_KILLEDBYITEM);
+	static const size = sizeof(g_iExceptionItems);
+	for(new i = 0; i < size; i++)
+	{
+		if(g_iExceptionItems[i] == item)
+			return 1;
+	}
+
+	return 0;
+}
+
 public Show_All()
 {
-	if(get_game_state() == STARTED)
+	if(get_game_state() == GAME_STARTED)
 	{
 		new num, i, specstate;
 		static players[32];
@@ -437,22 +459,22 @@ public Show_All()
 			i = players[num];
 
 			specstate = get_special_state(i);
-			if(specstate == DEAD || specstate == NONE)
+			if(specstate == PC_DEAD || specstate == PC_NONE)
 			{
-				set_attrib_special(i, 1, TRAITOR, NONE, DEAD);
-				if(!g_iStoredInfo[i][PD_SCOREBOARD])
-					set_attrib_special(i, 0, INNOCENT, DETECTIVE);
+				set_attrib_special(i, 1, PC_TRAITOR, PC_NONE, PC_DEAD);
+				if(!g_iPlayerData[i][PD_SCOREBOARD])
+					set_attrib_special(i, 0, PC_INNOCENT, PC_DETECTIVE);
 			}
 		}
 	}
 }
 
-public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, DamageBits)
+public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, bits)
 {
 	if(!my_return_check(attacker))
 	{
-		new Float:modifier = g_iStoredInfo[attacker][PD_KARMA]/1000.0;
-		if(modifier > 0.05)
+		new Float:modifier = g_iPlayerData[attacker][PD_KARMA]/1000.0;
+		if(modifier > 0.05 && damage > 0.0)
 		{
 			damage *= (modifier*get_pcvar_float(cvar_damage_modifier));
 			if(cs_get_user_team(attacker) != cs_get_user_team(victim))
@@ -470,92 +492,96 @@ public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, DamageBits)
 	return HAM_IGNORED;
 }
 
-public Ham_TakeDamage_post(victim, inflictor, attacker, Float:damage, DamageBits)
+public Ham_TakeDamage_post(victim, inflictor, attacker, Float:damage, bits)
 {
 	if(!my_return_check(attacker))
 	{
-		new dmg = floatround(entity_get_float(victim, EV_FL_dmg_take));
-		karma_modifier(attacker, victim, dmg, 0, 0);
+		if(damage > 0.0)
+		{
+			if(victim != attacker)
+				karma_modifier(attacker, victim, KARMA_DMG);
+		}
+		else set_pdata_float(victim, m_flPainShock, 1.0, OFFSET_LINUX_PLAYERS);
 	}
+}
+
+public Ham_TraceAttack_pre()
+{
+	if(get_game_state() != GAME_STARTED && get_game_state() != GAME_OFF)
+		return HAM_SUPERCEDE;
+
+	return HAM_IGNORED;
 }
 
 public Forward_AddToFullPack_post(es_handle, e, ent, host, hostflags, id, pSet)
 {
-    if(id && host != ent && get_orig_retval() && is_user_alive(host) && is_user_alive(ent))
-    {
+	if(id && host != ent && is_user_connected(host) && is_user_connected(ent) && get_orig_retval())
+	{
+		static cvar;
+		if(!cvar)
+			cvar = get_pcvar_num(cvar_detective_glow);
+
 		static entTeam, hostTeam;
-		entTeam = get_special_state(ent);
-		hostTeam = get_special_state(host);
-		if(entTeam != INNOCENT)
+		entTeam = get_special_alive(ent);
+		hostTeam = get_special_alive(host);
+		if(entTeam != PC_INNOCENT)
 		{
-			if(hostTeam == TRAITOR)
+			if(hostTeam == PC_TRAITOR || ((hostTeam == PC_DETECTIVE || hostTeam == PC_INNOCENT) && entTeam != PC_TRAITOR && cvar))
 			{
 				set_es(es_handle, ES_RenderFx, kRenderFxGlowShell);
 				set_es(es_handle, ES_RenderColor, g_iTeamColors[entTeam]);
 				set_es(es_handle, ES_RenderAmt, 35);
 			}
-			else if(hostTeam == DETECTIVE || hostTeam == INNOCENT)
-			{
-				if(entTeam != TRAITOR)
-				{
-					set_es(es_handle, ES_RenderFx, kRenderFxGlowShell);
-					set_es(es_handle, ES_RenderColor, g_iTeamColors[entTeam]);
-					set_es(es_handle, ES_RenderAmt, 35);
-				}
-			}
 		}
-    }
+	}
 }
 
 public pick_specials()
 {
-	new id, randomNum, num;
+	new id, num;
 	static players[32];
+	static name[32];
 
 	get_players(players, num);
+
 	while(id == 0)
 	{
 		id = players[random(num)];
-		if(get_special_state(id) == TRAITOR || get_special_state(id) == DETECTIVE)
+		if(get_special_state(id) == PC_TRAITOR || get_special_state(id) == PC_DETECTIVE)
 			id = 0;
 	}
 
-	static msg[96], name[32];
-	randomNum = specials_needed();
+	new randomNum = specials_needed();
 	get_user_name(id, name, charsmax(name));
 	switch(randomNum)
 	{
-		case TRAITOR:
+		case PC_TRAITOR:
 		{
-			g_iStoredInfo[id][PD_CREDITS] = get_pcvar_num(cvar_credits_tra_start);
+			g_iPlayerData[id][PD_CREDITS] = get_pcvar_num(cvar_credits_tra_start);
 			set_special_state(id, randomNum);
-			ttt_set_stats(id, STATS_TRA, ttt_get_player_stat(id, STATS_TRA)+1);
 
-			formatex(msg, charsmax(msg), "[%L] %s choosen (ID:%d)", id, special_names[randomNum], name, id);
-			ttt_log_to_file(LOG_DEFAULT, msg);
+			ttt_log_to_file(LOG_DEFAULT, "[%L] %s choosen (ID:%d)", id, special_names[randomNum], name, id);
 			cs_set_player_team(id, CS_TEAM_T, false);
 		}
-		case DETECTIVE:
+		case PC_DETECTIVE:
 		{
 			if(num >= get_pcvar_num(cvar_detectives))
 			{
-				g_iStoredInfo[id][PD_CREDITS] = get_pcvar_num(cvar_credits_det_start);
+				g_iPlayerData[id][PD_CREDITS] = get_pcvar_num(cvar_credits_det_start);
 				set_special_state(id, randomNum);
-				ttt_set_stats(id, STATS_DET, ttt_get_player_stat(id, STATS_DET)+1);
 
-				formatex(msg, charsmax(msg), "[%L] %s choosen (ID:%d)", id, special_names[randomNum], name, id);
-				ttt_log_to_file(LOG_DEFAULT, msg);
+				ttt_log_to_file(LOG_DEFAULT, "[%L] %s choosen (ID:%d)", id, special_names[randomNum], name, id);
 				cs_set_player_team(id, CS_TEAM_CT, false);
 			}
 		}
-		case NONE: return;
+		case PC_NONE: return;
 	}
 }
 
 stock my_return_check(id)
 {
 	new game = get_game_state();
-	if(!is_user_connected(id) || game == OFF || game == ENDED)
+	if(!is_user_connected(id) || game == GAME_OFF || game == GAME_ENDED)
 		return 1;
 
 	return 0;
@@ -563,12 +589,12 @@ stock my_return_check(id)
 
 public specials_needed()
 {
-	if(g_iMaxTraitors > get_special_count(TRAITOR))
-		return TRAITOR;
-	else if(g_iMaxDetectives > get_special_count(DETECTIVE))
-		return DETECTIVE;
+	if(g_iMaxTraitors > get_special_count(PC_TRAITOR))
+		return PC_TRAITOR;
+	else if(g_iMaxDetectives > get_special_count(PC_DETECTIVE))
+		return PC_DETECTIVE;
 
-	return NONE;
+	return PC_NONE;
 }
 
 public give_survival_credits()
@@ -579,9 +605,9 @@ public give_survival_credits()
 	for(--num; num >= 0; num--)
 	{
 		id = players[num];
-		if(get_special_state(id) == DETECTIVE)
+		if(get_special_state(id) == PC_DETECTIVE)
 		{
-			g_iStoredInfo[id][PD_CREDITS] += bonus;
+			g_iPlayerData[id][PD_CREDITS] += bonus;
 			client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_AWARD4", bonus, floatround(get_pcvar_float(cvar_credits_det_survtime))*g_iMultiSeconds);
 			g_iMultiSeconds++;
 		}
@@ -597,21 +623,23 @@ public reset_all()
 	{
 		id = players[num];
 
-		set_special_state(id, NONE);
-		for(i = 0; i < PlayerData; i++)
+		set_special_state(id, PC_NONE);
+		for(i = 0; i < PLAYER_DATA; i++)
 		{
 			if(i == PD_KARMA || i == PD_KARMATEMP || i == PD_KILLEDDEATHS) continue;
 			if(i == PD_KILLEDBY || i == PD_KILLEDBYITEM)
-				g_iStoredInfo[id][i] = -1;
-			else g_iStoredInfo[id][i] = 0;
+				g_iPlayerData[id][i] = -1;
+			else g_iPlayerData[id][i] = 0;
 		}
 		if(task_exists(id))
 			remove_task(id);
 		set_attrib_all(id, 0);
 	}
 
-	//if(get_game_state() == ENDED || get_game_state() == RESTARTING)
-	//	set_game_state(OFF);
+	for(i = 0; i < PLAYER_CLASS; i++)
+		g_iSpecialCount[i] = 0;
+	//if(get_game_state() == GAME_ENDED || get_game_state() == GAME_RESTARTING)
+	//	set_game_state(GAME_OFF);
 
 	g_iMultiSeconds = 1;
 	g_iMultiCount = 1;
@@ -622,66 +650,59 @@ public reset_all()
 
 public reset_client(id)
 {
-	for(new i = 0; i < PlayerData; i++)
+	for(new i = 0; i < PLAYER_DATA; i++)
 	{
 		if(i == PD_KILLEDBY || i == PD_KILLEDBYITEM)
-			g_iStoredInfo[id][i] = -1;
-		else g_iStoredInfo[id][i] = 0;
+			g_iPlayerData[id][i] = -1;
+		else g_iPlayerData[id][i] = 0;
 	}
 
-	set_special_state(id, NONE);
+	set_special_state(id, PC_NONE);
 	set_attrib_all(id, 0);
 }
 
-public karma_modifier(attacker, victim, modifier, type, when)
+public karma_modifier(attacker, victim, type)
 {
-	if (attacker == 0)
+	if(attacker == 0)
 		attacker = victim;
 
-	if(!is_user_connected(attacker) || !is_user_connected(victim) || get_game_state() == OFF)
+	if(!is_user_connected(attacker) || !is_user_connected(victim) || get_game_state() == GAME_OFF)
 		return;
 
 	static players[32];
-	new num, karmamulti, two, ivictim, iattacker;
+	new num, karmamulti, modifier;
 	get_players(players, num);
-	if(type == 1)
+	if(type == KARMA_KILL)
 	{
-		karmamulti = floatround(get_pcvar_num(cvar_karma_multi)*(modifier/1000.0));
-		two = (3*(g_iMaxPlayers-1)-(num-1))/(g_iMaxPlayers-1);
+		karmamulti = floatround(get_pcvar_num(cvar_karma_multi)*(g_iPlayerData[victim][PD_KARMATEMP]/1000.0));
+		modifier = (3*(g_iMaxPlayers-1)-(num-1))/(g_iMaxPlayers-1);
 	}
-	else if(type == 0)
+	else if(type == KARMA_DMG)
 	{
-		karmamulti = modifier*0.25 < 1 ? 1 : floatround(modifier*get_pcvar_float(cvar_karma_damage));
-		two = 1;
+		new Float:temp = entity_get_float(victim, EV_FL_dmg_take);
+		karmamulti = floatround(temp*0.25) < 1 ? 1 : floatround(temp*get_pcvar_float(cvar_karma_damage));
+		modifier = 1;
 	}
 
-	ivictim = !when ? get_special_state(victim) : g_iStoredInfo[victim][PD_KILLEDSTATE];
-	iattacker = is_user_alive(attacker) ? get_special_state(attacker) : g_iStoredInfo[attacker][PD_KILLEDSTATE];
+	new ivictim = get_special_alive(victim);
+	new iattacker = get_special_alive(attacker);
 
-	if(attacker == victim && type != 2)
-		g_iStoredInfo[attacker][PD_KARMASELF] = karmamulti*two;
-
-	if(type == 2)
-		g_iStoredInfo[attacker][PD_KARMATEMP] += modifier;
-	else
+	switch(iattacker)
 	{
-		switch(iattacker)
+		case PC_TRAITOR: //attacker is traitor
 		{
-			case TRAITOR: //attacker is traitor
+			switch(ivictim)
 			{
-				switch(ivictim)
-				{
-					case TRAITOR:					g_iStoredInfo[attacker][PD_KARMATEMP] -= karmamulti*two;
-					case DETECTIVE, INNOCENT:		g_iStoredInfo[attacker][PD_KARMATEMP] += karmamulti/two;
-				}
+				case PC_TRAITOR:					g_iPlayerData[attacker][PD_KARMATEMP] -= karmamulti*modifier;
+				case PC_DETECTIVE, PC_INNOCENT:		g_iPlayerData[attacker][PD_KARMATEMP] += karmamulti/modifier;
 			}
-			case DETECTIVE, INNOCENT: //attacker is detective or innocent
+		}
+		case PC_DETECTIVE, PC_INNOCENT: //attacker is detective or innocent
+		{
+			switch(ivictim)
 			{
-				switch(ivictim)
-				{
-					case TRAITOR:					g_iStoredInfo[attacker][PD_KARMATEMP] += karmamulti/two;
-					case DETECTIVE, INNOCENT:		g_iStoredInfo[attacker][PD_KARMATEMP] -= karmamulti*two;
-				}
+				case PC_TRAITOR:					g_iPlayerData[attacker][PD_KARMATEMP] += karmamulti/modifier;
+				case PC_DETECTIVE, PC_INNOCENT:		g_iPlayerData[attacker][PD_KARMATEMP] -= karmamulti*modifier;
 			}
 		}
 	}
@@ -689,67 +710,69 @@ public karma_modifier(attacker, victim, modifier, type, when)
 	karma_reset(attacker);
 }
 
-public karma_reset(id)
+stock karma_reset(id)
 {
-	if(g_iStoredInfo[id][PD_KARMATEMP] > 1000)
-		g_iStoredInfo[id][PD_KARMATEMP] = 1000;
-	else if(g_iStoredInfo[id][PD_KARMATEMP] < 1)
-		g_iStoredInfo[id][PD_KARMATEMP] = 1;
+	if(g_iPlayerData[id][PD_KARMATEMP] > 1000)
+		g_iPlayerData[id][PD_KARMATEMP] = 1000;
+	else if(g_iPlayerData[id][PD_KARMATEMP] < 1)
+		g_iPlayerData[id][PD_KARMATEMP] = 0;
 }
 
-public set_game_state(which)
+stock set_game_state(new_state)
 {
-	if(g_iGame && g_iGame < ENDED && which == RESTARTING)
-		log_amx("[TTT] Game has restarted :( (game: %d)", g_iGame);
+	ttt_log_to_file(LOG_GAMETYPE, "[PRE ] Gamemode: %s", g_szGameModes[g_iGlobalInfo[GI_GAMEMODE]]);
+	if(get_game_state() && get_game_state() < GAME_ENDED && new_state == GAME_RESTARTING)
+		log_amx("[TTT] Game has restarted :( (game: %d)", get_game_state());
 
-	g_iGame = which;
-	static msg[32];
-	formatex(msg, charsmax(msg), "Gamemode set to %s", g_szGameModes[which]);
-	ttt_log_to_file(LOG_GAMETYPE, msg);
+	g_iGlobalInfo[GI_GAMEMODE] = new_state;
 
 	new ret;
-	ExecuteForward(g_iGameModeForward, ret, which);
+	ExecuteForward(g_iGameModeForward, ret, new_state);
+	ttt_log_to_file(LOG_GAMETYPE, "[POST] Gamemode: %s", g_szGameModes[g_iGlobalInfo[GI_GAMEMODE]]);
 }
 
-public get_game_state()
-	return g_iGame;
+stock get_game_state()
+	return g_iGlobalInfo[GI_GAMEMODE];
 
-public get_special_state(id)
-	return g_iStoredInfo[id][PD_PLAYERSTATE];
+stock get_special_state(id)
+	return g_iPlayerData[id][PD_PLAYERSTATE];
 
-public get_special_count(msg)
-	return g_iSpecialCount[msg];
-
-public get_special_alive(id)
+stock get_special_alive(id)
 {
 	if(!is_user_alive(id))
-		return g_iStoredInfo[id][PD_KILLEDSTATE];
+		return g_iPlayerData[id][PD_KILLEDSTATE];
 
 	return get_special_state(id);
 }
 
-public set_special_state(id, msg)
+stock set_special_state(id, new_state)
 {
-	if(!is_user_connected(id) || get_special_state(id) == msg)
+	if(!is_user_connected(id))
 		return;
 
-	if(get_special_state(id))
-		set_special_count(get_special_state(id), -1);
+	new player_state = get_special_state(id);
+	if(player_state == new_state)
+		return;
 
-	g_iStoredInfo[id][PD_PLAYERSTATE] = msg;
-	set_special_count(msg, 1);
+	set_special_count(player_state, get_special_count(player_state)-1);
+
+	set_player_data(id, PD_PLAYERSTATE, new_state);
+	set_special_count(new_state, get_special_count(new_state)+1);
 }
 
-public set_special_count(msg, num)
-{
-	if(num == -1)
-		g_iSpecialCount[msg]--;
-	else if(num == 1)
-		g_iSpecialCount[msg]++;
-	else g_iSpecialCount[msg] = 0;
-}
+stock set_player_data(id, pd, value)
+	g_iPlayerData[id][pd] = value;
 
-public set_fake_team(id, getstate)
+stock get_player_data(id, pd)
+	return g_iPlayerData[id][pd];
+
+stock set_special_count(special_state, count)
+	g_iSpecialCount[special_state] = count;
+
+stock get_special_count(special_state)
+	return g_iSpecialCount[special_state];
+
+stock set_fake_team(id, getstate)
 {
 	new num, i, specstate;
 	static players[32];
@@ -761,19 +784,19 @@ public set_fake_team(id, getstate)
 		specstate = get_special_state(i);
 		switch(getstate)
 		{
-			case INNOCENT, DETECTIVE:
+			case PC_INNOCENT, PC_DETECTIVE:
 			{
-				if(specstate == DETECTIVE)
+				if(specstate == PC_DETECTIVE)
 					set_fake_message(id, i, "CT");
 				else set_fake_message(id, i, "TERRORIST");
 			}
-			case TRAITOR:
+			case PC_TRAITOR:
 			{
-				if(specstate == TRAITOR || specstate == DETECTIVE)
+				if(specstate == PC_TRAITOR || specstate == PC_DETECTIVE)
 				{
 					set_fake_message(id, i, "CT");
-					if(specstate == DETECTIVE)
-						set_attrib_special(i, 4, TRAITOR, NONE, DEAD);
+					if(specstate == PC_DETECTIVE)
+						set_attrib_special(i, 4, PC_TRAITOR, PC_NONE, PC_DEAD);
 				}
 				else set_fake_message(id, i, "TERRORIST");
 			}
@@ -781,7 +804,7 @@ public set_fake_team(id, getstate)
 	}
 }
 
-public set_fake_message(id, i, msg[])
+stock set_fake_message(id, i, msg[])
 {
 	message_begin(MSG_ONE_UNRELIABLE, g_Msg_TeamInfo, _, id);
 	write_byte(i);
@@ -789,21 +812,8 @@ public set_fake_message(id, i, msg[])
 	message_end();
 }
 
-public Float:get_round_time()
+stock Float:get_round_time()
 	return get_gametime() - g_fRoundStart - g_fFreezeTime;
-
-stock weapon_in_box(ent)
-{
-    new weapon;
-    for(new i = 1; i < 6; i++)
-    {
-        weapon = get_pdata_cbase(ent, m_rgpPlayerItems_CWeaponBox[i], OFFSET_LINUX_WEAPONS);
-        if(weapon > 0)
-            return cs_get_weapon_id(weapon);
-    }
-
-    return 0;
-}  
 
 stock mynew_register_cvar(name[], string[], flags = 0, Float:fvalue = 0.0)
 {
@@ -836,7 +846,8 @@ stock new_register_cvar(name[], string[], plug[] = "ttt_core.amxx")
 		if(!file)
 			return 0;
 
-		if(!TrieGetSize(g_tCvarsToFile))
+		//if(!TrieGetSize(g_tCvarsToFile))
+		if(!g_iTrieSize)
 		{
 			new newline[48];
 			static line[128];
@@ -848,7 +859,12 @@ stock new_register_cvar(name[], string[], plug[] = "ttt_core.amxx")
 
 				parse(line, newline, charsmax(newline));
 				remove_quotes(newline);
-				TrieSetCell(g_tCvarsToFile, newline, 1, false);
+				#if AMXX_VERSION_NUM >= 183
+					TrieSetCell(g_tCvarsToFile, newline, 1, false);
+				#else
+					TrieSetCell(g_tCvarsToFile, newline, 1);
+				#endif
+				g_iTrieSize++;
 			}
 		}
 		fclose(file);
@@ -858,46 +874,42 @@ stock new_register_cvar(name[], string[], plug[] = "ttt_core.amxx")
 	if(!TrieKeyExists(g_tCvarsToFile, name))
 	{
 		fprintf(file, "%-32s %-8s // ^"%s^"^n", name, string, plug);
-		TrieSetCell(g_tCvarsToFile, name, 1, false);
+		#if AMXX_VERSION_NUM >= 183
+			TrieSetCell(g_tCvarsToFile, name, 1, false);
+		#else
+			TrieSetCell(g_tCvarsToFile, name, 1);
+		#endif
+		g_iTrieSize++;
 	}
 
 	fclose(file);
 	return 1;
 }
-
 // API
-public _get_special_state(plugin, params)
-{
-	if(params != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_special_state)") -1;
-
-	return get_special_state(get_param(1));
-}
-
-public _get_special_count(plugin, params)
-{
-	if(params != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_special_count)") -1;
-
-	return get_special_count(get_param(1));
-}
-
-public _set_special_state(plugin, params)
+public _set_playerstate(plugin, params)
 {
 	if(params != 2)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_special_state)");
+		return ttt_log_api_error("ttt_set_playerstate needs 2 params(p1: %d, p2: %d)", plugin, params, get_param(1), get_param(2));
 
 	set_special_state(get_param(1), get_param(2));
 	return 1;
 }
 
-public _set_special_count(plugin, params)
+public _set_gamemode(plugin, params)
 {
-	if(params != 2)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_special_count)");
+	if(params != 1)
+		return ttt_log_api_error("ttt_set_gamemode needs 1 param(p1: %d)", plugin, params, get_param(1));
 
-	set_special_count(get_param(1), get_param(2));
+	set_game_state(get_param(1));
 	return 1;
+}
+
+public _get_specialcount(plugin, params)
+{
+	if(params != 1)
+		return ttt_log_api_error("ttt_get_specialcount needs 1 param(p1: %d)", plugin, params, get_param(1));
+
+	return get_special_count(get_param(1));
 }
 
 public Float:_get_roundtime()
@@ -906,60 +918,63 @@ public Float:_get_roundtime()
 public _get_playerdata(plugin, params)
 {
 	if(params != 2)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_playerdata)") -1;
+		return ttt_log_api_error("ttt_get_playerdata needs 2 params(p1: %d, p2: %d)", plugin, params, get_param(1), get_param(2));
 
-	return g_iStoredInfo[get_param(1)][get_param(2)];
+	new id = get_param(1), data = get_param(2);
+	if(id >= 32 || data >= PLAYER_DATA)
+	{
+		static name[40];
+		get_plugin(plugin, name, charsmax(name));
+		if(data == PD_PLAYERSTATE)
+			log_amx("STATE Param1 %d, Param2 %d, plugin %s", id, data, name);
+		else log_amx("ELSE Param1 %d, Param2 %d, plugin %s", id, data, name);
+	}
+	return get_player_data(id, data);
 }
 
 public _set_playerdata(plugin, params)
 {
 	if(params != 3)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_playerdata)");
+		return ttt_log_api_error("ttt_set_playerdata needs 3 params(p1: %d, p2: %d, p3: %d)", plugin, params, get_param(1), get_param(2), get_param(3));
 
 	new id = get_param(1);
 	new datatype = get_param(2);
-	new newdata = get_param(3);
-
-	g_iStoredInfo[id][datatype] = newdata;
+	if(id >= 32 || datatype >= PLAYER_DATA)
+	{
+		static name[40];
+		get_plugin(plugin, name, charsmax(name));
+		if(datatype == PD_PLAYERSTATE)
+			log_amx("STATE Param1 %d, Param2 %d, plugin %s", id, datatype, name);
+		else log_amx("ELSE Param1 %d, Param2 %d, plugin %s", id, datatype, name);
+	}
+	set_player_data(id, datatype, get_param(3));
 	if(datatype == PD_KARMATEMP)
 		karma_reset(id);
 
 	return 1;
 }
 
-public _set_karma_modifier(plugin, params)
-{
-	if(params != 5)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_karma_modifier)");
-
-	karma_modifier(get_param(1), get_param(2), get_param(3), get_param(4), get_param(5));
-	return 1;
-}
-
-public _set_game_state(plugin, params)
+public _get_globalinfo(plugin, params)
 {
 	if(params != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_game_state)");
+		return ttt_log_api_error("ttt_get_globalinfo needs 1 param(p1: %d)", plugin, params, get_param(1));
 
-	set_game_state(get_param(1));
-	return 1;
+	return g_iGlobalInfo[get_param(1)];
 }
 
-public _get_game_state(plugin, params)
-	return get_game_state();
-
-public _get_special_alive(plugin, params)
+public _set_globalinfo(plugin, params)
 {
-	if(params != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_special_alive)");
+	if(params != 2)
+		return ttt_log_api_error("ttt_set_globalinfo needs 2 params(p1: %d, p2: %d)", plugin, params, get_param(1), get_param(2));
 
-	return get_special_alive(get_param(1));
+	g_iGlobalInfo[get_param(1)] = get_param(2);
+	return 1;
 }
 
 public _register_cvar(plugin, params)
 {
 	if(params != 2)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_register_cvar)");
+		return ttt_log_api_error("ttt_register_cvar needs 2 params", plugin, params);
 
 	static name[48], string[16], pluginname[48];
 	get_string(1, name, charsmax(name));
@@ -967,4 +982,22 @@ public _register_cvar(plugin, params)
 	get_plugin(plugin, pluginname, charsmax(pluginname));
 
 	return new_register_cvar(name, string, pluginname);
+}
+
+public _item_exception(plugin, params)
+{
+	if(params != 1)
+		return ttt_log_api_error("ttt_item_exception needs 1 param(p1: %d)", plugin, params, get_param(1));
+
+	static const size = sizeof(g_iExceptionItems);
+	for(new i = 0; i < size; i++)
+	{
+		if(g_iExceptionItems[i] == -2)
+		{
+			g_iExceptionItems[i] = get_param(1);
+			return 1;
+		}
+	}
+
+	return 0;
 }

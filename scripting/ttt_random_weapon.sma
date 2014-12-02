@@ -66,11 +66,11 @@ public give_random_weap(id)
 {
 	strip_weapons(id);
 
-	new iPri = random_num(0, charsmax(g_szPriWeap));
-	new iSec = random_num(0, charsmax(g_szSecWeap));
+	new pri = random_num(0, charsmax(g_szPriWeap));
+	new sec = random_num(0, charsmax(g_szSecWeap));
 
-	cswa_give_normal(id, g_szSecWeap[iSec], -1, g_szSecAmmo[iSec]);
-	cswa_give_normal(id, g_szPriWeap[iPri], -1, g_szPriAmmo[iPri]);
+	cswa_give_normal(id, g_szSecWeap[sec], -1, g_szSecAmmo[sec]);
+	cswa_give_normal(id, g_szPriWeap[pri], -1, g_szPriAmmo[pri]);
 
 	if(task_exists(id))
 		remove_task(id);

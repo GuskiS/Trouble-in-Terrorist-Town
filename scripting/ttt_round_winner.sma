@@ -2,7 +2,6 @@
 #include <hamsandwich>
 #include <fakemeta>
 #include <engine>
-#include <fun>
 #include <ttt>
 #include <round_terminator>
 #include <amx_settings_api>
@@ -10,9 +9,9 @@
 #define TASK_ROUNDEND 1111
 
 new g_iWonGame;
-new g_iWonScore[Special], g_pWonForward, cvar_karma_win;
+new g_iWonScore[PLAYER_CLASS], g_pWonForward, cvar_karma_win;
 
-new g_szWinSounds[3][TTT_MAXFILELENGHT];
+new g_szWinSounds[3][TTT_FILELENGHT];
 new const g_szWinner[][] =
 {
 	"",
@@ -45,8 +44,7 @@ public plugin_init()
 	cvar_karma_win = my_register_cvar("ttt_karma_win", "20");
 	register_message(get_user_msgid("TextMsg"), "Message_Winner");
 
-	RegisterHam(Ham_Spawn, "player", "Ham_Spawn_post", 1, true);
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_post", 1, true);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 	g_pWonForward = CreateMultiForward("ttt_winner", ET_IGNORE, FP_CELL);
 }
 
@@ -59,18 +57,18 @@ public plugin_natives()
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode != STARTED && task_exists(TASK_ROUNDEND))
+	if(gamemode != GAME_STARTED && task_exists(TASK_ROUNDEND))
 		remove_task(TASK_ROUNDEND);
 
 	switch(gamemode)
 	{
-		case RESTARTING:
+		case GAME_RESTARTING:
 		{
 			g_iWonGame = false;
-			g_iWonScore[DETECTIVE] = 0;
-			g_iWonScore[TRAITOR] = 0;
+			g_iWonScore[PC_DETECTIVE] = 0;
+			g_iWonScore[PC_TRAITOR] = 0;
 		}
-		case PREPARING: set_task(floatmul(get_pcvar_float(get_cvar_pointer("mp_roundtime")), 60.0) + get_pcvar_float(get_cvar_pointer("ttt_preparation_time")), "End_Round_False", TASK_ROUNDEND);
+		case GAME_PREPARING: set_task(floatmul(get_pcvar_float(get_cvar_pointer("mp_roundtime")), 60.0) + get_pcvar_float(get_cvar_pointer("ttt_preparation_time")), "End_Round_False", TASK_ROUNDEND);
 	}
 
 	// set_task(0.2, "Update_Scores");
@@ -78,7 +76,7 @@ public ttt_gamemode(gamemode)
 
 public client_disconnect(id)
 {
-	if(ttt_get_game_state() == STARTED && get_winner(0))
+	if(ttt_get_gamemode() == GAME_STARTED && get_winner(0))
 	{
 		//new alive, num;
 		//static players[32];
@@ -92,7 +90,7 @@ public client_disconnect(id)
 
 public client_putinserver(id)
 {
-	if(ttt_get_game_state() == OFF || ttt_get_game_state() == UNSET)
+	if(ttt_get_gamemode() == GAME_OFF || ttt_get_gamemode() == GAME_UNSET)
 	{
 		new total, alive;
 		static players[32];
@@ -104,15 +102,9 @@ public client_putinserver(id)
 	}
 }
 
-public Ham_Spawn_post(id)
-{
-	if(is_user_alive(id) && ttt_get_game_state() == PREPARING)
-		set_user_godmode(id, 1);
-}
-
 public Ham_Killed_post(victim, killer)
 {
-	if(ttt_get_special_count(TRAITOR) == 0 && ttt_get_special_alive(victim) == TRAITOR)
+	if(ttt_get_specialcount(PC_TRAITOR) == 0 && ttt_get_alivestate(victim) == PC_TRAITOR)
 	{
 		new bomb = -1, count;
 		while((bomb = find_ent_by_model(-1, "grenade", "models/w_c4.mdl")) != 0)
@@ -130,9 +122,9 @@ public Ham_Killed_post(victim, killer)
 
 public End_Round_False()
 {
-	new mode = ttt_get_game_state();
-	if(mode == STARTED || mode == OFF || mode == UNSET)
-		TerminateRound(RoundEndType_TeamExtermination, DETECTIVE, MapType_Bomb);
+	new mode = ttt_get_gamemode();
+	if(mode == GAME_STARTED || mode == GAME_OFF || mode == GAME_UNSET)
+		TerminateRound(RoundEndType_TeamExtermination, PC_DETECTIVE, MapType_Bomb);
 }
 
 public get_winner(type)
@@ -144,28 +136,28 @@ public get_winner(type)
 	if(num == 0)
 	{
 		//log_amx("END by NUM %d", num);
-		who = TRAITOR;
+		who = PC_TRAITOR;
 	}
-	else if(ttt_get_special_count(DETECTIVE) == 0 && ttt_get_special_count(INNOCENT) == 0)
+	else if(ttt_get_specialcount(PC_DETECTIVE) == 0 && ttt_get_specialcount(PC_INNOCENT) == 0)
 	{
-		//log_amx("END by COUNT1 %d, %d", ttt_get_special_count(DETECTIVE), ttt_get_special_count(INNOCENT));
-		who = TRAITOR;
+		//log_amx("END by COUNT1 %d, %d", ttt_get_specialcount(PC_DETECTIVE), ttt_get_specialcount(PC_INNOCENT));
+		who = PC_TRAITOR;
 	}
-	else if(ttt_get_special_count(TRAITOR) == 0)
+	else if(ttt_get_specialcount(PC_TRAITOR) == 0)
 	{
-		//log_amx("END by COUNT2 %d", ttt_get_special_count(TRAITOR));
-		who = DETECTIVE;
+		//log_amx("END by COUNT2 %d", ttt_get_specialcount(PC_TRAITOR));
+		who = PC_DETECTIVE;
 	}
 
 	if(type && who > 0)
 	{
-		new id, specstate;
+		new id, specstate, cvar = get_pcvar_num(cvar_karma_win);
 		for(--num; num >= 0; num--)
 		{
 			id = players[num];
-			specstate = ttt_get_special_state(id);
-			if(specstate == who || (who == DETECTIVE && specstate == INNOCENT))
-				ttt_set_playerdata(id, PD_KARMATEMP, ttt_get_playerdata(id, PD_KARMATEMP)+get_pcvar_num(cvar_karma_win));
+			specstate = ttt_get_playerstate(id);
+			if(specstate == who || (who == PC_DETECTIVE && specstate == PC_INNOCENT))
+				ttt_set_playerdata(id, PD_KARMATEMP, ttt_get_playerdata(id, PD_KARMATEMP) + cvar);
 		}
 	}
 	return who;
@@ -173,7 +165,7 @@ public get_winner(type)
 
 public Message_Winner(msgid, dest, id)
 {
-	if(g_iWonGame && ttt_get_game_state() != STARTED)
+	if(g_iWonGame && ttt_get_gamemode() != GAME_STARTED)
 		return PLUGIN_CONTINUE;
 
 	static message[20];
@@ -183,9 +175,9 @@ public Message_Winner(msgid, dest, id)
 		new who;
 		get_winner(1);
 		if(equal(message, "#Terrorists_Win"))
-			who = TRAITOR;
+			who = PC_TRAITOR;
 		else if(equal(message, "#CTs_Win"))
-			who = DETECTIVE;
+			who = PC_DETECTIVE;
 	
 		if(!who)
 			who = get_winner(0);
@@ -216,12 +208,12 @@ public Update_Scores()
 
 	message_begin(MSG_BROADCAST, msg, _, 0);
 	write_string("TERRORIST");
-	write_short(g_iWonScore[TRAITOR]);
+	write_short(g_iWonScore[PC_TRAITOR]);
 	message_end();
 
 	message_begin(MSG_BROADCAST, msg, _, 0);
 	write_string("CT");
-	write_short(g_iWonScore[DETECTIVE]);
+	write_short(g_iWonScore[PC_DETECTIVE]);
 	message_end();
 
 	g_iWonGame = false;
@@ -233,11 +225,11 @@ public _get_winner()
 public _set_winner(plugin, params)
 {
 	if(params != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_winner)");
+		return ttt_log_api_error("ttt_set_winner needs 1 param(p1: %d)", plugin, params, get_param(1));
 
 	new team = get_param(1);
-	if(team != TRAITOR && team != DETECTIVE)
-		return ttt_log_to_file(LOG_ERROR, "Team isn't Traitor or Detective (ttt_set_winner)");
+	if(team != PC_TRAITOR && team != PC_DETECTIVE)
+		return ttt_log_api_error("ttt_set_winner team isn't Traitor or Detective, team: %d", plugin, params, team);
 
 	TerminateRound(RoundEndType_TeamExtermination, team);
 	return 1;

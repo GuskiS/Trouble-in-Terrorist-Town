@@ -14,7 +14,7 @@ new g_iStatusSync, g_iKarmaSync, g_pDetectiveSpr, g_pTraitorSpr, g_iActiveTarget
 
 public plugin_precache()
 {
-	new sprites[TTT_MAXFILELENGHT];
+	new sprites[TTT_FILELENGHT];
 	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Player Icons", "TRAITOR", sprites, charsmax(sprites)))
 	{
 		amx_save_setting_string(TTT_SETTINGSFILE, "Player Icons", "TRAITOR", g_szTSprite);
@@ -55,7 +55,7 @@ public client_disconnect(id)
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == ENDED)
+	if(gamemode == GAME_ENDED)
 	{
 		for(new i = 0; i < g_iBodyCount; i++)
 			g_iBodyEnts[i] = false;
@@ -69,106 +69,91 @@ public ttt_spawnbody(owner, ent)
 	g_iBodyCount++;
 }
 
-public client_PreThink(id)
-{
-	if(!is_user_alive(id) || g_fShowTime[id] > get_gametime() || ttt_return_check(id))
-		return;
-    
-	static Float:fOrigin[2][3], origin[3];
-	entity_get_vector(id, EV_VEC_origin, fOrigin[0]);
-	get_user_origin(id, origin, 3);
-	IVecFVec(origin, fOrigin[1]);
-	if(get_distance_f(fOrigin[0], fOrigin[1]) > 100.0)
-		return;
+// public client_PreThink(id)
+// {
+// 	if(!is_user_alive(id) || g_fShowTime[id] > get_gametime() || ttt_return_check(id))
+// 		return;
 
-	new ent, fake;
-	for(new i = 0; i < g_iBodyCount; i++)
-	{
-		fake = g_iBodyEnts[i];
-		if(!is_valid_ent(fake) || !is_visible(id, fake))
-			continue;
+// 	g_fShowTime[id] = get_gametime() + 0.5;
+// 	new ent = find_dead_body_1d(id, g_iBodyEnts, g_iBodyCount);
+// 	if(ent)
+// 	{
+// 		new target = entity_get_int(ent, EV_INT_iuser1);
+// 		if(!is_user_connected(target) || is_user_alive(target))
+// 			return;
 
-		if(get_dat_deadbody(fake, fOrigin[0], fOrigin[1]))
-		{
-			ent = fake;
-			break;
-		}
-	}
+// 		new R, G = 50, B;
+// 		static out[64];
+// 		if(ttt_get_playerdata(target, PD_IDENTIFIED))
+// 		{
+// 			new killedstate = ttt_get_playerdata(target, PD_KILLEDSTATE);
+// 			R = g_iTeamColors[killedstate][0];
+// 			G = g_iTeamColors[killedstate][1];
+// 			B = g_iTeamColors[killedstate][2];
+// 			static name[32];
+// 			get_user_name(target, name, charsmax(name));
+// 			formatex(out, charsmax(out), "[%L] %s", id, special_names[killedstate], name);
+// 		}
+// 		else
+// 		{
+// 			R = 255;
+// 			G = 222;
+// 			if(ttt_get_playerstate(id) == PC_TRAITOR)
+// 				formatex(out, charsmax(out), "%L --- [%L]", id, "TTT_UNIDENTIFIED", id, special_names[ttt_get_playerdata(target, PD_KILLEDSTATE)]);
+// 			else formatex(out, charsmax(out), "%L", id, "TTT_UNIDENTIFIED");
+// 		}
 
-	if(ent)
-	{
-		new target = entity_get_int(ent, EV_INT_iuser1);
-		if(is_user_alive(target))
-			return;
-	
-		new R, G = 50, B;
-		static out[64];
-		if(ttt_get_playerdata(target, PD_IDENTIFIED))
-		{
-			new killedstate = ttt_get_playerdata(target, PD_KILLEDSTATE);
-			R = g_iTeamColors[killedstate][0];
-			G = g_iTeamColors[killedstate][1];
-			B = g_iTeamColors[killedstate][2];
-			static name[32];
-			get_user_name(target, name, charsmax(name));
-			formatex(out, charsmax(out), "[%L] %s", id, special_names[killedstate], name);
-		}
-		else
-		{
-			R = 255;
-			G = 222;
-			if(ttt_get_special_state(id) == TRAITOR)
-				formatex(out, charsmax(out), "%L --- [%L]", id, "TTT_UNIDENTIFIED", id, special_names[ttt_get_playerdata(target, PD_KILLEDSTATE)]);
-			else formatex(out, charsmax(out), "%L", id, "TTT_UNIDENTIFIED");
-		}
-    
-		g_fShowTime[id] = get_gametime() + 0.95;
-		set_hudmessage(R, G, B, -1.0, 0.60, 1, 0.01, 1.0, 0.05, 0.01, -1);
-		ShowSyncHudMsg(id, g_iStatusSync, "%s", out);
-	}
-	else
-	{
-		new body;
-		get_user_aiming(id, ent, body);
-		if(is_valid_ent(ent))
-		{
-			static classname[32];
-			entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
+// 		set_hudmessage(R, G, B, -1.0, 0.60, 1, 0.01, 1.0, 0.05, 0.01, -1);
+// 		ShowSyncHudMsg(id, g_iStatusSync, "%s", out);
+// 	}
+// 	else
+// 	{
+// 		new body;
+// 		get_user_aiming(id, ent, body);
+// 		if(is_valid_ent(ent))
+// 		{
+// 			static classname[32];
+// 			entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
 		
-			if(equal(classname, TTT_DEATHSTATION) && ttt_get_special_state(id) == TRAITOR)
-			{
-				new target = entity_get_int(ent, EV_INT_iuser1);
-				if(!is_user_connected(target))
-					return;
+// 			if(equal(classname, TTT_DEATHSTATION) && ttt_get_playerstate(id) == PC_TRAITOR)
+// 			{
+// 				new target = entity_get_int(ent, EV_INT_iuser1);
+// 				if(!is_user_connected(target))
+// 					return;
 		
-				static name[32];
-				get_user_name(target, name, charsmax(name));
-				set_hudmessage(g_iTeamColors[TRAITOR][0], g_iTeamColors[TRAITOR][1], g_iTeamColors[TRAITOR][2], -1.0, 0.60, 1, 0.01, 1.0, 0.01, 0.01, -1);
-				ShowSyncHudMsg(id, g_iStatusSync, "%s --- [%L]", name, id, "TTT_ITEM_ID8");
-				g_fShowTime[id] = get_gametime() + 0.95;
-			}
-		}
-	}
-}
+// 				static name[32];
+// 				get_user_name(target, name, charsmax(name));
+// 				set_hudmessage(g_iTeamColors[PC_TRAITOR][0], g_iTeamColors[PC_TRAITOR][1], g_iTeamColors[PC_TRAITOR][2], -1.0, 0.60, 1, 0.01, 1.0, 0.01, 0.01, -1);
+// 				ShowSyncHudMsg(id, g_iStatusSync, "%s --- [%L]", name, id, "TTT_ITEM_ID8");
+// 			}
+// 		}
+// 	}
+// }
 
 public Event_StatusValue_S(id)
 {
 	if(!is_user_connected(id))
 		return;
 
-	new mode = ttt_get_game_state();
-	if(mode == ENDED)
+	new mode = ttt_get_gamemode();
+	if(mode != GAME_STARTED && mode != GAME_PREPARING)
 		return;
 
-	static message[128];
+	static message[128], name[32];
 	new pid = read_data(2);
 
-	new pidState = ttt_get_special_state(pid), idState = ttt_get_special_state(id), useState;
-	if(pidState == DETECTIVE)
-		useState = DETECTIVE;
-	else if(pidState == TRAITOR && idState == TRAITOR)
-		useState = TRAITOR;
-	else useState = INNOCENT;
+	new pidState = ttt_get_playerstate(pid), idState = ttt_get_playerstate(id), useState;
+	if(pidState == PC_DETECTIVE)
+		useState = PC_DETECTIVE;
+	else if(pidState == PC_TRAITOR && idState == PC_TRAITOR)
+		useState = PC_TRAITOR;
+	else useState = PC_INNOCENT;
+
+	if(mode == GAME_PREPARING)
+	{
+		pidState = PC_INNOCENT;
+		useState = PC_INNOCENT;
+	}
 
 	new R = g_iTeamColors[useState][0];
 	new G = g_iTeamColors[useState][1];
@@ -178,18 +163,19 @@ public Event_StatusValue_S(id)
 	set_hudmessage(R, G, B, -1.0, 0.60, 1, 0.01, 3.0, 0.01, 0.01, -1);
 	remove_special_sprite(id, g_iActiveTarget[id]);
 
+	get_user_name(pid, name, charsmax(name));
 	if(get_pcvar_num(cvar_show_health))
-		formatex(message, charsmax(message), "%n -- [Karma = %d] [HP = %d]", pid, karma, get_user_health(pid));
-	else formatex(message, charsmax(message), "%n -- [Karma = %d]", pid, karma);
+		formatex(message, charsmax(message), "%s -- [Karma = %d] [HP = %d]", name, karma, get_user_health(pid));
+	else formatex(message, charsmax(message), "%s -- [Karma = %d]", name, karma);
 
-	if((idState == INNOCENT || idState == DETECTIVE) && pidState != DETECTIVE)
+	if((idState == PC_INNOCENT || idState == PC_DETECTIVE) && pidState != PC_DETECTIVE)
 	{
-		if(!ttt_get_hide_name(pid))
+		if(!ttt_get_playerdata(pid, PD_HIDENAME))
 			ShowSyncHudMsg(id, g_iStatusSync, "%s", message);
 	}
 	else if(pid != g_iActiveTarget[id])
 	{
-		if(mode == PREPARING || mode == OFF)
+		if(mode == GAME_PREPARING || mode == GAME_OFF)
 			ShowSyncHudMsg(id, g_iStatusSync, "%s", message);
 		else 
 		{
@@ -197,10 +183,10 @@ public Event_StatusValue_S(id)
 			ShowSyncHudMsg(id, g_iStatusSync, "%s", message);
 		}
 
-		if(pidState == DETECTIVE)
-			show_special_sprite(id, pid, DETECTIVE);
-		else if(pidState == TRAITOR && idState == TRAITOR)
-			show_special_sprite(id, pid, TRAITOR);
+		if(pidState == PC_DETECTIVE)
+			show_special_sprite(id, pid, PC_DETECTIVE);
+		else if(pidState == PC_TRAITOR && idState == PC_TRAITOR)
+			show_special_sprite(id, pid, PC_TRAITOR);
 	}
 
 	g_iActiveTarget[id] = pid;
@@ -221,9 +207,9 @@ public show_special_sprite(id, target, which)
 	write_byte(TE_PLAYERATTACHMENT);
 	write_byte(target);
 	write_coord(45);
-	if(which == TRAITOR)
+	if(which == PC_TRAITOR)
 		write_short(g_pTraitorSpr);
-	else if(which == DETECTIVE)
+	else if(which == PC_DETECTIVE)
 		write_short(g_pDetectiveSpr);
 	write_short(30);
 	message_end();
@@ -253,8 +239,8 @@ public show_status(alive)
 	}
 
 	new R, G, B;
-	new aliveState = ttt_get_special_state(alive), deadState = ttt_get_special_state(dead);
-	if(deadState == DEAD || deadState == NONE)
+	new aliveState = ttt_get_playerstate(alive), deadState = ttt_get_playerstate(dead);
+	if(deadState == PC_DEAD || deadState == PC_NONE)
 	{
 		R = g_iTeamColors[deadState][0];
 		G = g_iTeamColors[deadState][1];
@@ -267,12 +253,12 @@ public show_status(alive)
 		B = g_iTeamColors[aliveState][2];
 	}
 	
-	set_hudmessage(R, G, B, 0.02, 0.87, 0, 6.0, 1.1, 0.0, 0.0, -1);
+	set_hudmessage(R, G, B, 0.02, 0.9, 0, 6.0, 1.1, 0.0, 0.0, -1);
 	new karma = ttt_get_playerdata(alive, PD_KARMA);
 
-	if(deadState == DEAD || deadState == NONE)
+	if(deadState == PC_DEAD || deadState == PC_NONE)
 		ShowSyncHudMsg(dead, g_iKarmaSync, "[Karma = %d]", karma);
-	else if(aliveState != DETECTIVE && aliveState != TRAITOR)
+	else if(aliveState != PC_DETECTIVE && aliveState != PC_TRAITOR)
 		ShowSyncHudMsg(alive, g_iKarmaSync, "[Karma = %d] [%L]", karma, alive, special_names[aliveState]);
 	else ShowSyncHudMsg(alive, g_iKarmaSync, "[Karma = %d] [%L] [Credits = %d]", karma, alive, special_names[aliveState], ttt_get_playerdata(alive, PD_CREDITS));
 }

@@ -10,10 +10,10 @@ enum (+= 1111)
 	TASK_VICTIM = 1111
 }
 
-new g_iRoundSpecial[Special];
-new g_iBodyInfo[33][BodyData];
-new g_pShowInfoForward, g_pCreateBodyForward;
-new cvar_credits_det_trakill, cvar_credits_det_bonusdead;
+new g_iRoundSpecial[PLAYER_CLASS];
+new g_iBodyInfo[33][BODY_DATA];
+new g_pShowInfoForward, g_pCreateBodyForward, Float:g_fWaitTime[33];
+new cvar_credits_det_trakill, cvar_credits_det_bonusdead, cvar_allow_scan_anytime, cvar_credits_scanned;
 
 public plugin_init()
 {
@@ -21,10 +21,12 @@ public plugin_init()
 
 	cvar_credits_det_trakill		= my_register_cvar("ttt_credits_det_trakill",	"1");
 	cvar_credits_det_bonusdead		= my_register_cvar("ttt_credits_det_bonusdead",	"1");
+	cvar_credits_scanned			= my_register_cvar("ttt_credits_scanned",		"10");
+	cvar_allow_scan_anytime			= my_register_cvar("ttt_allow_scan_anytime",	"0");
 
 	register_event("ClCorpse", "Message_ClCorpse", "a", "10=0");
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_pre", 0, true);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
 
 	g_pShowInfoForward = CreateMultiForward("ttt_showinfo", ET_IGNORE, FP_CELL, FP_CELL);
 	g_pCreateBodyForward = CreateMultiForward("ttt_spawnbody", ET_IGNORE, FP_CELL, FP_CELL);
@@ -41,6 +43,9 @@ public plugin_natives()
 
 public client_disconnect(id)
 {
+	if(is_valid_ent(g_iBodyInfo[id][BODY_ENTID]))
+		remove_entity(g_iBodyInfo[id][BODY_ENTID]);
+
 	reset_all(id);
 }
 
@@ -78,10 +83,10 @@ public reduce_time(taskid)
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == ENDED || gamemode == RESTARTING)
+	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 		remove_entity_name(TTT_DEADBODY);
 
-	if(gamemode == PREPARING || gamemode == RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
 		new num, id;
 		static players[32];
@@ -93,20 +98,20 @@ public ttt_gamemode(gamemode)
 		}
 	}
 
-	if(gamemode == STARTED)
+	if(gamemode == GAME_STARTED)
 		set_task(1.0, "round_specials");
 }
 
 public reset_all(id)
 {
-	for(new i = 0; i < BodyData; i++)
+	for(new i = 0; i < BODY_DATA; i++)
 		g_iBodyInfo[id][i] = 0;
 }
 
 public round_specials()
 {
-	for(new i = 0; i < Special; i++)
-		g_iRoundSpecial[i] = ttt_get_special_count(i);
+	for(new i = 0; i < PLAYER_CLASS; i++)
+		g_iRoundSpecial[i] = ttt_get_specialcount(i);
 }
 
 public Message_ClCorpse()
@@ -137,6 +142,7 @@ public create_body(id, Float:origin[3], model[], seq)
 	formatex(out, charsmax(out), "models/player/%s/%s.mdl", model, model);
 	entity_set_model(ent, out);
 	entity_set_origin(ent, origin);
+	// entity_set_size(ent, Float:{-16.0, -16.0, -36.0}, Float:{16.0, 16.0, 36.0});
 	entity_set_size(ent, Float:{-1.0, -1.0, -1.0}, Float:{1.0, 1.0, 1.0});
 
 	entity_set_float(ent, EV_FL_frame, 255.0);
@@ -145,6 +151,9 @@ public create_body(id, Float:origin[3], model[], seq)
 	entity_set_int(ent, EV_INT_solid, SOLID_TRIGGER);
 
 	entity_set_int(ent, EV_INT_iuser1, id);
+
+	get_user_name(id, out, charsmax(out));
+	ttt_log_to_file(LOG_MISC, "Dead body for %s was created, ent: %d", out, ent);
 }
 
 public Forward_EmitSound_pre(id, channel, sample[])
@@ -152,30 +161,12 @@ public Forward_EmitSound_pre(id, channel, sample[])
 	if(!is_user_alive(id) || ttt_return_check(id))
 		return;
 
-	if(equal(sample, "common/wpn_denyselect.wav"))
+	if(g_fWaitTime[id] < get_gametime() && equal(sample, "common/wpn_denyselect.wav"))
 	{
-		new Float:fOrigin[2][3], origin[3];
-		entity_get_vector(id, EV_VEC_origin, fOrigin[0]);
-		get_user_origin(id, origin, 3);
-		IVecFVec(origin, fOrigin[1]);
-		if(get_distance_f(fOrigin[0], fOrigin[1]) > 60.0)
-			return;
-
-		new ent, fake;
-		for(new i = 0; i < 33; i++)
-		{
-			fake = g_iBodyInfo[i][BODY_ENTID];
-			if(!is_valid_ent(fake) || !is_visible(id, fake))
-				continue;
-
-			if(get_dat_deadbody(fake, fOrigin[0], fOrigin[1]))
-			{
-				ent = fake;
-				break;
-			}
-		}
-
-		if(ent) used_use(id, ent);
+		new ent = find_dead_body_2d(id, g_iBodyInfo);
+		g_fWaitTime[id] = get_gametime() + 1.0;
+		if(is_valid_ent(ent))
+			used_use(id, ent);
 	}
 }
 
@@ -185,21 +176,30 @@ public used_use(id, ent)
 		return;
 
 	new bodyowner = entity_get_int(ent, EV_INT_iuser1);
+	if(!is_user_connected(bodyowner))
+		return;
 
-	if((ttt_get_special_state(id) == DETECTIVE || ttt_get_playerdata(bodyowner, PD_IDENTIFIED) == 1 || g_iRoundSpecial[DETECTIVE] == 0))
+	new identified = ttt_get_playerdata(bodyowner, PD_IDENTIFIED);
+	if(ttt_get_playerstate(id) == PC_DETECTIVE || identified || g_iRoundSpecial[PC_DETECTIVE] == 0 || get_pcvar_num(cvar_allow_scan_anytime))
 	{
-		new ret;
-		ExecuteForward(g_pShowInfoForward, ret, id, bodyowner);
-
-		if(!ttt_get_playerdata(bodyowner, PD_IDENTIFIED))
+		if(!identified)
 		{
+			new scanned = get_pcvar_num(cvar_credits_scanned);
 			set_attrib_all(bodyowner, 1);
 			ttt_set_playerdata(bodyowner, PD_IDENTIFIED, true);
 			ttt_set_playerdata(bodyowner, PD_SCOREBOARD, true);
+			g_iBodyInfo[bodyowner][BODY_CALLD] = false;
 
-			if(ttt_get_playerdata(bodyowner, PD_KILLEDSTATE) == TRAITOR && ttt_get_special_count(DETECTIVE) > 0)
+			if(scanned > 0)
+			{
+				ttt_set_playerdata(id, PD_KARMATEMP, ttt_get_playerdata(id, PD_KARMATEMP) + scanned);
+				client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_AWARD5", scanned);
+			}
+
+			if(ttt_get_playerdata(bodyowner, PD_KILLEDSTATE) == PC_TRAITOR && ttt_get_specialcount(PC_DETECTIVE) > 0)
 			{
 				new bonus, credits;
+				new killer = ttt_get_playerdata(bodyowner, PD_KILLEDBY);
 				static name[32];
 				get_user_name(bodyowner, name, charsmax(name));
 
@@ -209,32 +209,34 @@ public used_use(id, ent)
 				for(--num; num >= 0; num--)
 				{
 					i = players[num];
-					if(ttt_get_special_state(i) == DETECTIVE)
+					if(ttt_get_playerstate(i) == PC_DETECTIVE)
 					{
 						bonus = get_pcvar_num(cvar_credits_det_bonusdead);
 						credits = ttt_get_playerdata(i, PD_CREDITS) + bonus;
 
 						ttt_set_playerdata(i, PD_CREDITS, credits);
-						client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_AWARD3", bonus, id, special_names[TRAITOR], name);
+						client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD3", bonus, i, special_names[PC_TRAITOR], name);
 
-						if(ttt_get_playerdata(bodyowner, PD_KILLEDBY) == i)
+						if(killer == i)
 						{
 							bonus = get_pcvar_num(cvar_credits_det_trakill);
 							credits = ttt_get_playerdata(i, PD_CREDITS) + bonus;
 							ttt_set_playerdata(i, PD_CREDITS, credits);
-							client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD2", bonus, i, special_names[TRAITOR], name);
+							client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD2", bonus, i, special_names[PC_TRAITOR], name);
 						}
 					}
 				}
 			}
 		}
+		new ret;
+		ExecuteForward(g_pShowInfoForward, ret, id, bodyowner);
 	}
 }
 
 public _get_bodydata(plugin, params)
 {
 	if(params != 2)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_get_bodydata)")-1;
+		return ttt_log_api_error("ttt_get_bodydata needs 2 params(p1: %d, p2: %d)", plugin, params, get_param(1), get_param(2)) -1;
 
 	return g_iBodyInfo[get_param(1)][get_param(2)];
 }
@@ -242,7 +244,7 @@ public _get_bodydata(plugin, params)
 public _set_bodydata(plugin, params)
 {
 	if(params != 3)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_set_bodydata)");
+		return ttt_log_api_error("ttt_set_bodydata needs 3 params(p1: %d, p2: %d, p3: %d)", plugin, params, get_param(1), get_param(2), get_param(3));
 
 	g_iBodyInfo[get_param(1)][get_param(2)] = get_param(3);
 	return 1;
@@ -251,7 +253,7 @@ public _set_bodydata(plugin, params)
 public _clear_bodydata(plugin, params)
 {
 	if(params != 1)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_clear_bodydata)");
+		return ttt_log_api_error("ttt_clear_bodydata needs 1 param(p1: %d)", plugin, params, get_param(1));
 
 	new body = get_param(1);
 	if(task_exists(TASK_VICTIM+body))

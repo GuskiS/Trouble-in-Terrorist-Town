@@ -1,9 +1,9 @@
 #include <amxmodx>
-#include <fakemeta>
 #include <hamsandwich>
+#include <fakemeta>
 #include <engine>
-#include <ttt>
 #include <amx_settings_api>
+#include <ttt>
 
 #define XO_WEAPON					4
 #define m_pPlayer					41
@@ -15,12 +15,10 @@ enum _:TYPE
 {
 	K_NONE,
 	K_TEMP,
-	K_ON,
-	K_BOTH
+	K_ON
 }
 
-new Array:g_aKnifeModels;
-new const g_szKnifeModels[][] = {"models/v_knife.mdl", "models/p_knife.mdl", "models/ttt/w_throwingknife.mdl"};
+new g_szModels[3][TTT_FILELENGHT];
 new const Float:g_szDroppedSize[][3] =
 {
 	{-20.0, -20.0, -5.0},
@@ -33,44 +31,26 @@ new cvar_dmgmult, cvar_pattack_rate, cvar_sattack_rate, cvar_pattack_recoil,
 
 public plugin_precache()
 {
-	new model[TTT_MAXFILELENGHT];
-	g_aKnifeModels = ArrayCreate(TTT_MAXFILELENGHT, 3);
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_V", g_szModels[0], charsmax(g_szModels[])))
+	{
+		g_szModels[0] = "models/v_knife.mdl";
+		amx_save_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_V", g_szModels[0]);
+	}
+	precache_model(g_szModels[0]);
 
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Knife", "MODEL_V", g_aKnifeModels))
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_P", g_szModels[1], charsmax(g_szModels[])))
 	{
-		amx_save_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_V", g_szKnifeModels[0]);
-		precache_model(g_szKnifeModels[0]);
-		ArrayPushString(g_aKnifeModels, g_szKnifeModels[0]);
+		g_szModels[1] = "models/p_knife.mdl";
+		amx_save_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_P", g_szModels[1]);
 	}
-	else
-	{
-		ArrayGetString(g_aKnifeModels, 0, model, charsmax(model));
-		precache_model(model);
-	}
+	precache_model(g_szModels[1]);
 
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Knife", "MODEL_P", g_aKnifeModels))
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_W", g_szModels[2], charsmax(g_szModels[])))
 	{
-		amx_save_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_P", g_szKnifeModels[1]);
-		precache_model(g_szKnifeModels[1]);
-		ArrayPushString(g_aKnifeModels, g_szKnifeModels[1]);
+		g_szModels[2] = "models/ttt/w_throwingknife.mdl";
+		amx_save_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_W", g_szModels[2]);
 	}
-	else
-	{
-		ArrayGetString(g_aKnifeModels, 1, model, charsmax(model));
-		precache_model(model);
-	}
-
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Knife", "MODEL_W", g_aKnifeModels))
-	{
-		amx_save_setting_string(TTT_SETTINGSFILE, "Knife", "MODEL_W", g_szKnifeModels[2]);
-		precache_model(g_szKnifeModels[2]);
-		ArrayPushString(g_aKnifeModels, g_szKnifeModels[2]);
-	}
-	else
-	{
-		ArrayGetString(g_aKnifeModels, 2, model, charsmax(model));
-		precache_model(model);
-	}
+	precache_model(g_szModels[2]);
 }
 
 public plugin_init()
@@ -91,37 +71,38 @@ public plugin_init()
 	register_touch("grenade", "*", "Touch_Grenade");
 
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_smokegrenade", "Ham_PrimaryAttack_Grenade_pre", 0);
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_pre", 0, true);
-	RegisterHam(Ham_TakeDamage, "player", "Ham_TakeDamage_pre", 0, true);
+	RegisterHam(Ham_Killed, "player", "Ham_Killed_pre", 0);
+	RegisterHamPlayer(Ham_TakeDamage, "Ham_TakeDamage_pre", 0);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_knife", "Ham_PrimaryAttack_post", 1);
 	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_knife", "Ham_SecondaryAttack_post", 1);
 	RegisterHam(Ham_Item_Deploy, "weapon_knife", "Ham_Item_Deploy_post", 1);
 	RegisterHam(Ham_Item_Deploy, "weapon_smokegrenade", "Ham_Item_Deploy_Grenade_post", 1);
 
-	new name[TTT_ITEMNAME];
+	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID11");
-	g_iItem_Knife = ttt_buymenu_add(name, get_pcvar_num(cvar_price_knife), TRAITOR);
+	g_iItem_Knife = ttt_buymenu_add(name, get_pcvar_num(cvar_price_knife), PC_TRAITOR);
 
 	register_clcmd("drop", "clcmd_drop");
 	register_clcmd("weapon_knife", "clcmd_knife");
 }
 
-public plugin_natives()
-{
-	register_library("ttt");
-	register_native("ttt_knife_holding", "_knife_holding");
-}
-
 public client_disconnect(id)
 {
-	g_iKnifeType[id] = K_NONE;
+	change_knife_holding(id, K_NONE);
 	g_iNadeVelocity[id][0] = false;
 	g_iNadeVelocity[id][1] = false;
 }
 
+public change_knife_holding(id, type)
+{
+	ttt_set_playerdata(id, PD_HOLDINGITEM, type == K_ON ? g_iItem_Knife : -1);
+	ttt_set_playerdata(id, PD_ITEMSTATE, type);
+	g_iKnifeType[id] = type;
+}
+
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == ENDED || gamemode == RESTARTING)
+	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 	{
 		move_grenade();
 		new num, id;
@@ -135,7 +116,7 @@ public ttt_gamemode(gamemode)
 
 			if(is_user_alive(id) && g_iKnifeType[id] == K_ON)
 				reset_user_knife(id);
-			g_iKnifeType[id] = K_NONE;
+			change_knife_holding(id, K_NONE);
 		}
 	}
 }
@@ -146,7 +127,7 @@ public ttt_item_selected(id, item, name[], price)
 	{
 		if(get_user_weapon(id) == CSW_KNIFE)
 			strip_knife(id, K_ON);
-		else g_iKnifeType[id] = K_TEMP;
+		else change_knife_holding(id, K_TEMP);
 
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM2", name, id, "TTT_ITEM5");
 		return PLUGIN_HANDLED;
@@ -157,7 +138,7 @@ public ttt_item_selected(id, item, name[], price)
 
 public clcmd_drop(id)
 {
-	if(g_iKnifeType[id] == K_ON)
+	if(check_player_knife(id))
 	{
 		clcmd_throw(id, 64, 1);
 		return PLUGIN_HANDLED;
@@ -171,7 +152,7 @@ public clcmd_throw(id, vel, value)
 	new ent;
 	if(!user_has_weapon(id, CSW_SMOKEGRENADE))
 		ent = ham_give_weapon(id, "weapon_smokegrenade", 1);
-	else ent = fm_find_ent_by_owner(-1, "weapon_smokegrenade", id);
+	else ent = find_ent_by_owner(-1, "weapon_smokegrenade", id);
 
 	g_iNadeVelocity[id][0] = vel;
 	g_iNadeVelocity[id][1] = value;
@@ -179,6 +160,10 @@ public clcmd_throw(id, vel, value)
 	set_pdata_float(ent, m_flTimeWeaponIdle, 0.0, XO_WEAPON);
 	ExecuteHam(Ham_Weapon_WeaponIdle, ent);
 	strip_knife(id, K_NONE);
+
+	static name[32];
+	get_user_name(id, name, charsmax(name));
+	ttt_log_to_file(LOG_ITEM, "%s a throwed %L", name, LANG_PLAYER, "TTT_ITEM_ID11");
 }
 
 public clcmd_knife(id)
@@ -214,17 +199,13 @@ public grenade_throw(id, ent, nade)
 			UTIL_SetRendering(ent, kRenderFxGlowShell, Float:{255.0, 0.0, 0.0}, _, 50.0);
 
 		if(entity_get_float(ent, EV_FL_dmgtime) != 0.0)
-		{
-			static model[TTT_MAXFILELENGHT];
-			ArrayGetString(g_aKnifeModels, 2, model, charsmax(model));
-			entity_set_model(ent, model);
-		}
+			entity_set_model(ent, g_szModels[2]);
 	}
 }
 
 public Think_Grenade(ent)
 {
-	if(!is_valid_ent(ent) || GetGrenadeType(ent) != CSW_SMOKEGRENADE || !entity_get_int(ent, EV_INT_iuser4) || ttt_get_game_state() != STARTED)
+	if(!is_valid_ent(ent) || GetGrenadeType(ent) != CSW_SMOKEGRENADE || !entity_get_int(ent, EV_INT_iuser4) || ttt_get_gamemode() != GAME_STARTED)
 		return;
 
 	static Float:origin[3], Float:velocity[3], Float:angles[3];
@@ -256,7 +237,7 @@ public Think_Grenade(ent)
 
 public Touch_Grenade(nade, id)
 {
-	if(!is_valid_ent(nade) || GetGrenadeType(nade) != CSW_SMOKEGRENADE || !entity_get_int(nade, EV_INT_iuser4) || ttt_get_game_state() != STARTED)
+	if(!is_valid_ent(nade) || GetGrenadeType(nade) != CSW_SMOKEGRENADE || !entity_get_int(nade, EV_INT_iuser4) || ttt_get_gamemode() != GAME_STARTED)
 		return PLUGIN_CONTINUE;
 
 	if(is_user_alive(id))
@@ -307,79 +288,69 @@ public Touch_Grenade(nade, id)
 
 public Ham_Killed_pre(victim, killer, shouldgib)
 {
-	if(is_user_alive(killer) && g_iKnifeType[killer] == K_ON && get_user_weapon(killer) == CSW_KNIFE)
+	if(is_user_connected(killer) && check_player_knife(killer))
 		ttt_set_playerdata(victim, PD_KILLEDBYITEM, g_iItem_Knife);
 
-	g_iKnifeType[victim] = K_NONE;
+	change_knife_holding(victim, K_NONE);
 }
 
-public Ham_PrimaryAttack_post(knife)
-{	
-	if(!is_valid_ent(knife))
+public Ham_PrimaryAttack_post(ent)
+{
+	new id;
+	if(!is_valid_ent(ent) || !(id = check_player_knife(ent)))
 		return;
 
-	new id = get_pdata_cbase(knife, m_pPlayer, XO_WEAPON);
-	if(is_user_connected(id) && g_iKnifeType[id] == K_ON)
+	attack_post(id, ent, get_pcvar_float(cvar_pattack_rate), get_pcvar_float(cvar_pattack_recoil));
+	clcmd_throw(id, get_pcvar_num(cvar_knife_velocity), 0);
+}
+
+public Ham_SecondaryAttack_post(ent)
+{
+	new id;
+	if(!is_valid_ent(ent) || !(id = check_player_knife(ent)))
+		return;
+
+	attack_post(id, ent, get_pcvar_float(cvar_sattack_rate), get_pcvar_float(cvar_sattack_recoil));
+}
+
+public Ham_Item_Deploy_post(ent)
+{
+	if(!is_valid_ent(ent))
+		return;
+
+	new id = get_pdata_cbase(ent, m_pPlayer, XO_WEAPON);
+	if(is_user_alive(id) && g_iKnifeType[id] == K_ON)
 	{
-		attack_post(id, knife, get_pcvar_float(cvar_pattack_rate), get_pcvar_float(cvar_pattack_recoil));
-		clcmd_throw(id, get_pcvar_num(cvar_knife_velocity), 0);
+		entity_set_string(id, EV_SZ_viewmodel, g_szModels[0]);
+		entity_set_string(id, EV_SZ_weaponmodel, g_szModels[1]);
+		attack_post(id, ent, 0.5, 0.0);
 	}
 }
 
-public Ham_SecondaryAttack_post(knife)
-{	
-	if(!is_valid_ent(knife))
-		return;
-
-	new id = get_pdata_cbase(knife, m_pPlayer, XO_WEAPON);
-	if(is_user_connected(id) && g_iKnifeType[id] == K_ON)
-		attack_post(id, knife, get_pcvar_float(cvar_sattack_rate), get_pcvar_float(cvar_sattack_recoil));
-}
-
-public Ham_Item_Deploy_post(knife)
+public Ham_Item_Deploy_Grenade_post(ent)
 {
-	if(!is_valid_ent(knife))
+	if(!is_valid_ent(ent))
 		return;
 
-	new id = get_pdata_cbase(knife, m_pPlayer, XO_WEAPON);
+	new id = get_pdata_cbase(ent, m_pPlayer, XO_WEAPON);
 	if(is_user_alive(id) && g_iKnifeType[id] == K_ON)
 	{
-		static model[TTT_MAXFILELENGHT];
-		ArrayGetString(g_aKnifeModels, 0, model, charsmax(model));
-		entity_set_string(id, EV_SZ_viewmodel, model);
-		ArrayGetString(g_aKnifeModels, 1, model, charsmax(model));
-		entity_set_string(id, EV_SZ_weaponmodel, model);
-		attack_post(id, knife, 0.5, 0.0);
+		entity_set_string(id, EV_SZ_viewmodel, g_szModels[0]);
+		entity_set_string(id, EV_SZ_weaponmodel, g_szModels[1]);
+		attack_post(id, ent, 0.5, 0.0);
 	}
 }
 
-public Ham_Item_Deploy_Grenade_post(nade)
+public Ham_PrimaryAttack_Grenade_pre(ent)
 {
-	if(!is_valid_ent(nade))
+	if(!is_valid_ent(ent))
 		return;
 
-	new id = get_pdata_cbase(nade, m_pPlayer, XO_WEAPON);
+	new id = get_pdata_cbase(ent, m_pPlayer, XO_WEAPON);
 	if(is_user_alive(id) && g_iKnifeType[id] == K_ON)
 	{
-		static model[TTT_MAXFILELENGHT];
-		ArrayGetString(g_aKnifeModels, 0, model, charsmax(model));
-		entity_set_string(id, EV_SZ_viewmodel, model);
-		ArrayGetString(g_aKnifeModels, 1, model, charsmax(model));
-		entity_set_string(id, EV_SZ_weaponmodel, model);
-		attack_post(id, nade, 0.5, 0.0);
-	}
-}
-
-public Ham_PrimaryAttack_Grenade_pre(nade)
-{
-	if(!is_valid_ent(nade))
-		return;
-
-	new id = get_pdata_cbase(nade, m_pPlayer, XO_WEAPON);
-	if(is_user_alive(id) && g_iKnifeType[id] == K_ON)
-	{
-		set_pdata_float(nade, m_flTimeWeaponIdle, 0.0, XO_WEAPON);
-		ExecuteHam(Ham_Weapon_WeaponIdle, nade);
+		set_pdata_float(ent, m_flTimeWeaponIdle, 0.0, XO_WEAPON);
+		ExecuteHam(Ham_Weapon_WeaponIdle, ent);
 	}
 }
 
@@ -399,7 +370,8 @@ public give_knife(id, knife)
 	strip_knife(id, K_ON);
 	emit_sound(id, CHAN_WEAPON, "items/gunpickup2.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
 	if(is_valid_ent(knife))
-		remove_entity(knife);
+		entity_set_origin(knife, Float:{-8191.0, -8191.0, -8191.0});
+		// remove_entity(knife);
 }
 
 public attack_post(id, knife, Float:flRate, Float:cvar)
@@ -419,7 +391,7 @@ public attack_post(id, knife, Float:flRate, Float:cvar)
 
 public strip_knife(id, type)
 {
-	g_iKnifeType[id] = type;
+	change_knife_holding(id, type);
 	reset_user_knife(id);
 }
 
@@ -475,14 +447,13 @@ stock GetGrenadeType(ent)
 	return 0;
 }
 
-public _knife_holding(plugin, params)
+stock check_player_knife(id)
 {
-	if(params != 2)
-		return ttt_log_to_file(LOG_ERROR, "Wrong number of params (ttt_knife_holding)");
+	if(!is_user_connected(id))
+		id = get_pdata_cbase(id, m_pPlayer, XO_WEAPON);
 
-	new id = get_param(1);
-	if(get_param(2))
-		return g_iKnifeType[id] == K_TEMP ? true : false;
+	if(is_user_alive(id) && g_iKnifeType[id] == K_ON && get_user_weapon(id) == CSW_KNIFE)
+		return id;
 
-	return g_iKnifeType[id] == K_ON ? true : false;
+	return 0;
 }

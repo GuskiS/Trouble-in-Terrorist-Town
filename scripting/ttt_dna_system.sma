@@ -2,6 +2,7 @@
 #include <hamsandwich>
 #include <engine>
 #include <fakemeta>
+#include <cs_weapons_api>
 #include <ttt>
 #include <xs>
 
@@ -23,8 +24,8 @@ public plugin_init()
 	register_plugin("[TTT] DNA System", TTT_VERSION, TTT_AUTHOR);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_c4", "Ham_PrimaryAttack_pre", 0);
 
-	g_Msg_BarTime		=	get_user_msgid("BarTime");
-	g_Max_Players		=	get_maxplayers();
+	g_Msg_BarTime	=	get_user_msgid("BarTime");
+	g_Max_Players	=	get_maxplayers();
 }
 
 public client_disconnect(id)
@@ -35,9 +36,9 @@ public client_disconnect(id)
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == ENDED || gamemode == STARTED)
+	if(gamemode == GAME_ENDED || gamemode == GAME_STARTED)
 	{
-		if(gamemode == ENDED)
+		if(gamemode == GAME_ENDED)
 		{
 			for(new i = 0; i < g_iBodyCount; i++)
 				g_iBodyEnts[i] = false;
@@ -51,7 +52,7 @@ public ttt_gamemode(gamemode)
 		{
 			id = players[num];
 
-			if(gamemode == ENDED)
+			if(gamemode == GAME_ENDED)
 			{
 				if(is_user_connected(g_iTracing[id]))
 					ttt_clear_bodydata(g_iTracing[id]);
@@ -60,9 +61,9 @@ public ttt_gamemode(gamemode)
 				g_iBackpack[id] = -1;
 			}
 
-			if(gamemode == STARTED && ttt_get_special_state(id) != DETECTIVE)
+			if(gamemode == GAME_STARTED && ttt_get_playerstate(id) != PC_DETECTIVE)
 			{
-				new out[TTT_ITEMNAME];
+				new out[TTT_ITEMLENGHT];
 				formatex(out, charsmax(out), "%L", id, "TTT_CALLDETECTIVE");
 				g_iBackpack[id] = ttt_backpack_add(id, out);
 			}
@@ -80,27 +81,7 @@ public ttt_item_backpack(id, item, name[])
 {
 	if(g_iBackpack[id] == item)
 	{
-		new Float:fOrigin[2][3], origin[3];
-		entity_get_vector(id, EV_VEC_origin, fOrigin[0]);
-		get_user_origin(id, origin, 3);
-		IVecFVec(origin, fOrigin[1]);
-		if(get_distance_f(fOrigin[0], fOrigin[1]) > 100.0)
-			return PLUGIN_CONTINUE;
-
-		new ent, fake;
-		for(new i = 0; i < g_iBodyCount; i++)
-		{
-			fake = g_iBodyEnts[i];
-			if(!is_valid_ent(fake) || !is_visible(id, fake))
-				continue;
-
-			if(get_dat_deadbody(fake, fOrigin[0], fOrigin[1]))
-			{
-				ent = fake;
-				break;
-			}
-		}
-
+		new ent = find_dead_body_1d(id, g_iBodyEnts, g_iBodyCount);
 		if(ent)
 		{
 			new victim = entity_get_int(ent, EV_INT_iuser1);
@@ -122,10 +103,10 @@ public ttt_item_backpack(id, item, name[])
 public Ham_PrimaryAttack_pre(ent)
 {
 	new id = entity_get_edict(ent, EV_ENT_owner);
-	if(!is_user_alive(id) || ttt_get_game_state() == OFF || ttt_get_game_state() == ENDED || id == entity_get_int(id, EV_INT_iuser2))
+	if(!is_user_alive(id) || ttt_get_gamemode() == GAME_OFF || ttt_get_gamemode() == GAME_ENDED || id == entity_get_int(id, EV_INT_iuser2))
 		return HAM_IGNORED;
 
-	if(ttt_is_dnas_active(id))
+	if(is_holding_dna_scanner(id))
 	{
 		used_mouse2(id);
 		return HAM_SUPERCEDE;
@@ -140,46 +121,33 @@ public used_mouse2(id)
 		return;
 
 	client_cmd(id, "-attack");
-	if(ttt_is_dnas_active(id))
+
+	static name[32];
+	get_user_name(id, name[0], charsmax(name[]));
+	new ent = find_dead_body_1d(id, g_iBodyEnts, g_iBodyCount);
+	if(ent)
 	{
-		new Float:fOrigin[2][3], origin[3];
-		entity_get_vector(id, EV_VEC_origin, fOrigin[0]);
-		get_user_origin(id, origin, 3);
-		IVecFVec(origin, fOrigin[1]);
-		if(get_distance_f(fOrigin[0], fOrigin[1]) > 100.0)
-			return;
-
-		new ent, fake;
-		for(new i = 0; i < g_iBodyCount; i++)
+		new victim = entity_get_int(ent, EV_INT_iuser1);
+		if(ttt_get_bodydata(victim, BODY_ACTIVE) == 1)
 		{
-			fake = g_iBodyEnts[i];
-			if(!is_valid_ent(fake) || !is_visible(id, fake))
-				continue;
-
-			if(get_dat_deadbody(fake, fOrigin[0], fOrigin[1]))
-			{
-				ent = fake;
-				break;
-			}
+			get_user_name(victim, name[1], charsmax(name[]));
+			ttt_log_to_file(LOG_MISC, "%s started to trace DNA of %s (ent: %d)", name[0], name[1], ent);
+			dna_make_it(id, victim, 0);
 		}
-
-		if(ent)
+	}
+	else
+	{
+		new body;
+		get_user_aiming(id, ent, body);
+		new itemid = ttt_is_item_setup(ent);
+		if(itemid > -1)
 		{
-			new victim = entity_get_int(ent, EV_INT_iuser1);
-			if(ttt_get_bodydata(victim, BODY_ACTIVE) == 1)
-				dna_make_it(id, victim, 0);
-		}
-		else
-		{
-			new body;
-			get_user_aiming(id, ent, body);
-			new itemid = ttt_is_item_setup(ent);
-			if(itemid > -1)
+			static data[SETUP_DATA];
+			ttt_item_setup_get(itemid, data);
+			if(data[SETUP_ITEMACTIVE])
 			{
-				static data[SetupData];
-				ttt_item_setup_get(itemid, data);
-				if(data[SETUP_ITEMACTIVE])
-					dna_make_it(id, ent, itemid);
+				ttt_log_to_file(LOG_MISC, "%s started to trace DNA of %d item (ent: %d)", name[0], itemid, ent);
+				dna_make_it(id, ent, itemid);
 			}
 		}
 	}
@@ -211,7 +179,7 @@ public dna_make_it(id, target, itemid)
 	}
 	else
 	{
-		static data[SetupData];
+		static data[SETUP_DATA];
 		ttt_item_setup_get(itemid, data);
 		data[SETUP_ITEMTRACER] = id;
 		data[SETUP_ITEMACTIVE] = 0;
@@ -235,7 +203,7 @@ public dna_owner_origin(id)
 
 		if(itemid > -1)
 		{
-			static data[SetupData];
+			static data[SETUP_DATA];
 			ttt_item_setup_get(itemid, data);
 			time = data[SETUP_ITEMTIME];
 			dnaowner = data[SETUP_ITEMOWNER];
@@ -267,7 +235,7 @@ public dna_print_text(id, msg[])
 	else 
 	{
 		new itemid = ttt_is_item_setup(g_iTracing[id]);
-		static data[SetupData];
+		static data[SETUP_DATA];
 		ttt_item_setup_get(itemid, data);
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, msg, data[SETUP_ITEMNAME]);
 	}
@@ -275,14 +243,14 @@ public dna_print_text(id, msg[])
 
 public client_PostThink(id)
 {
-	if(!is_user_alive(id) || ttt_get_special_state(id) != DETECTIVE || g_fWaitTime[id] + 0.1 > get_gametime())
+	if(!is_user_alive(id) || ttt_get_playerstate(id) != PC_DETECTIVE || g_fWaitTime[id] + 0.1 > get_gametime())
 		return;
 
 	g_fWaitTime[id] = get_gametime();
 	static i, Float:origin[3];
 	for(i = 1; i <= g_Max_Players; i++)
 	{
-		if(ttt_get_bodydata(i, BODY_CALLD) == 1 && is_valid_ent(ttt_get_bodydata(i, BODY_ENTID)))
+		if(is_valid_ent(ttt_get_bodydata(i, BODY_ENTID)) && ttt_get_bodydata(i, BODY_CALLD))
 		{
 			entity_get_vector(ttt_get_bodydata(i, BODY_ENTID), EV_VEC_origin, origin);
 			create_icon_origin(id, origin, g_iCallSprite, 35);

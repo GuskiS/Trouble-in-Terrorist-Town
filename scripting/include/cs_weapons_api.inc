@@ -25,7 +25,7 @@ enum _:STOREABLE_REPLACEMENTS
 	REPL_CSWA_SPEEDDELAY	= EV_FL_fuser1,
 	REPL_CSWA_DAMAGE		= EV_FL_fuser2,
 	REPL_CSWA_RELOADTIME	= EV_FL_fuser3,
-	//EV_FL_fuser4,
+	REPL_CSWA_RECOIL		= EV_FL_fuser4,
 
 	REPL_CSWA_STACKABLE		= EV_ENT_euser1,
 	REPL_CSWA_SILENCED		= EV_ENT_euser2,
@@ -51,6 +51,7 @@ enum _:STOREABLE_STRUCTURE
 	Float:STRUCT_CSWA_SPEEDDELAY,
 	Float:STRUCT_CSWA_DAMAGE,
 	Float:STRUCT_CSWA_RELOADTIME,
+	Float:STRUCT_CSWA_RECOIL,
 	STRUCT_CSWA_MODEL_V[64],
 	STRUCT_CSWA_MODEL_P[64],
 	STRUCT_CSWA_MODEL_W[64]
@@ -86,3 +87,12 @@ native cswa_give_normal(id, csw_id, clip, ammo, show = 0);
  * @param killer			Killer player id.
  */
 forward cswa_killed(weapon_id, victim, killer);
+
+/**
+ * Called when someone is shot at by special weapon.
+ *
+ * @param weapon_id			Weapon handle.
+ * @param victim			Killed player id.
+ * @param killer			Killer player id.
+ */
+forward cswa_damage(weapon_id, victim, attacker, Float:damage);

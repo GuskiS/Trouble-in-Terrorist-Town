@@ -25,16 +25,16 @@ public plugin_init()
 	RegisterHam(Ham_TraceAttack, "player", "Ham_TraceAttack_pre", 0);
 	RegisterHam(Ham_TraceAttack, "player", "Ham_TraceAttack_post", 1);
 
-	new name[TTT_ITEMNAME];
-	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID1");
-	g_iItem_Defuser = ttt_buymenu_add(name, get_pcvar_num(cvar_price_defuser), DETECTIVE);
+	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID2");
-	g_iItem_Armor = ttt_buymenu_add(name, get_pcvar_num(cvar_price_armor), SPECIAL);
+	g_iItem_Armor = ttt_buymenu_add(name, get_pcvar_num(cvar_price_armor), PC_SPECIAL);
+	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID1");
+	g_iItem_Defuser = ttt_buymenu_add(name, get_pcvar_num(cvar_price_defuser), PC_DETECTIVE);
 }
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == ENDED || gamemode == RESTARTING)
+	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 	{
 		new num, id;
 		static players[32];

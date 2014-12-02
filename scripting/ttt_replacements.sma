@@ -11,30 +11,14 @@
 #define m_flNextPrimaryAttack		46
 #define m_flNextSecondaryAttack		47
 
-new const g_szCrowbarModel[][] = {"models/ttt/v_crowbar.mdl", "models/ttt/p_crowbar.mdl"};
-new const g_szGrenadeModel[][] = {"models/ttt/v_hegrenade.mdl", "models/ttt/p_hegrenade.mdl", "models/ttt/w_hegrenade.mdl"};
+new g_szCrowbarModel[2][TTT_FILELENGHT];
+new g_szGrenadeModel[3][TTT_FILELENGHT];
 new const g_szCrowbarSound[][] = {"weapons/cbar_hitbod2.wav", "weapons/cbar_hitbod1.wav", "weapons/bullet_hit2.wav",  "weapons/cbar_miss1.wav"};
 new const g_szHeadShotSound[][] = {"player/headshot1.wav", "player/headshot2.wav", "player/headshot3.wav"};
-
-new const g_szWeaponsList[][] = 
-{
-	"weapon_p228", "weapon_scout", "weapon_hegrenade", "weapon_xm1014", "weapon_c4", "weapon_mac10", "weapon_aug",
-	"weapon_elite", "weapon_fiveseven",	"weapon_ump45", "weapon_sg550", "weapon_galil", "weapon_famas", "weapon_usp", "weapon_glock18",
-	"weapon_awp", "weapon_mp5navy", "weapon_m249", "weapon_m3",	"weapon_m4a1", "weapon_tmp", "weapon_g3sg1",
-	"weapon_deagle", "weapon_sg552", "weapon_ak47", "weapon_knife", "weapon_p90"
-};
-
-new HamHook:g_HamPrimaryAttack[sizeof(g_szWeaponsList)], HamHook:g_HamSecondaryAttack[sizeof(g_szWeaponsList)],
-	HamHook:g_HamItemDeploy[sizeof(g_szWeaponsList)];
-new Array:g_aCrowbarModels, Array:g_aGrenadeModels;
-new g_szPlayerModel[32];
+new g_szPlayerModel[32], g_iKnifeID = -1;
 
 public plugin_precache()
 {
-	new i, model[TTT_MAXFILELENGHT];
-	g_aCrowbarModels = ArrayCreate(TTT_MAXFILELENGHT, 2);
-	g_aGrenadeModels = ArrayCreate(TTT_MAXFILELENGHT, 3);
-
 // PLAYER
 	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Player model", "MODEL", g_szPlayerModel, charsmax(g_szPlayerModel)))
 	{
@@ -42,75 +26,51 @@ public plugin_precache()
 		amx_save_setting_string(TTT_SETTINGSFILE, "Player model", "MODEL", g_szPlayerModel);
 	}
 
+	new model[TTT_FILELENGHT];
 	formatex(model, charsmax(model), "models/player/%s/%s.mdl", g_szPlayerModel, g_szPlayerModel);
 	precache_model(model);
-
 // END
 
 // CROWBAR
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Crowbar", "MODEL_V", g_aCrowbarModels))
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Crowbar", "MODEL_V", g_szCrowbarModel[0], charsmax(g_szCrowbarModel[])))
 	{
+		g_szCrowbarModel[0] = "models/ttt/v_crowbar.mdl";
 		amx_save_setting_string(TTT_SETTINGSFILE, "Crowbar", "MODEL_V", g_szCrowbarModel[0]);
-		precache_model(g_szCrowbarModel[0]);
-		ArrayPushString(g_aCrowbarModels, g_szCrowbarModel[0]);
 	}
-	else
-	{
-		ArrayGetString(g_aCrowbarModels, 0, model, charsmax(model));
-		precache_model(model);
-	}
+	precache_model(g_szCrowbarModel[0]);
 
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Crowbar", "MODEL_P", g_aCrowbarModels))
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Crowbar", "MODEL_P", g_szCrowbarModel[1], charsmax(g_szCrowbarModel[])))
 	{
+		g_szCrowbarModel[1] = "models/ttt/p_crowbar.mdl";
 		amx_save_setting_string(TTT_SETTINGSFILE, "Crowbar", "MODEL_P", g_szCrowbarModel[1]);
-		precache_model(g_szCrowbarModel[1]);
-		ArrayPushString(g_aCrowbarModels, g_szCrowbarModel[1]);
 	}
-	else
-	{
-		ArrayGetString(g_aCrowbarModels, 1, model, charsmax(model));
-		precache_model(model);
-	}
+	precache_model(g_szCrowbarModel[1]);
 // END
 
 // GRENADE
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Grenade", "MODEL_V", g_aGrenadeModels))
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Grenade", "MODEL_V", g_szGrenadeModel[0], charsmax(g_szGrenadeModel[])))
 	{
+		g_szGrenadeModel[0] = "models/ttt/v_hegrenade.mdl";
 		amx_save_setting_string(TTT_SETTINGSFILE, "Grenade", "MODEL_V", g_szGrenadeModel[0]);
-		precache_model(g_szGrenadeModel[0]);
-		ArrayPushString(g_aGrenadeModels, g_szGrenadeModel[0]);
 	}
-	else
-	{
-		ArrayGetString(g_aGrenadeModels, 0, model, charsmax(model));
-		precache_model(model);
-	}
+	precache_model(g_szGrenadeModel[0]);
 
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Grenade", "MODEL_P", g_aGrenadeModels))
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Grenade", "MODEL_P", g_szGrenadeModel[1], charsmax(g_szGrenadeModel[])))
 	{
+		g_szGrenadeModel[1] = "models/ttt/p_hegrenade.mdl";
 		amx_save_setting_string(TTT_SETTINGSFILE, "Grenade", "MODEL_P", g_szGrenadeModel[1]);
-		precache_model(g_szGrenadeModel[1]);
-		ArrayPushString(g_aGrenadeModels, g_szGrenadeModel[1]);
 	}
-	else
-	{
-		ArrayGetString(g_aGrenadeModels, 1, model, charsmax(model));
-		precache_model(model);
-	}
+	precache_model(g_szGrenadeModel[1]);
 
-	if(!amx_load_setting_string_arr(TTT_SETTINGSFILE, "Grenade", "MODEL_W", g_aGrenadeModels))
+	if(!amx_load_setting_string(TTT_SETTINGSFILE, "Grenade", "MODEL_W", g_szGrenadeModel[2], charsmax(g_szGrenadeModel[])))
 	{
+		g_szGrenadeModel[2] = "models/ttt/w_hegrenade.mdl";
 		amx_save_setting_string(TTT_SETTINGSFILE, "Grenade", "MODEL_W", g_szGrenadeModel[2]);
-		precache_model(g_szGrenadeModel[2]);
-		ArrayPushString(g_aGrenadeModels, g_szGrenadeModel[2]);
 	}
-	else
-	{
-		ArrayGetString(g_aGrenadeModels, 2, model, charsmax(model));
-		precache_model(model);
-	}
+	precache_model(g_szGrenadeModel[2]);
 // END
 
+	new i;
 	for(i = 0; i <= charsmax(g_szCrowbarSound); i++)
 		precache_sound(g_szCrowbarSound[i]);
 
@@ -150,16 +110,19 @@ public plugin_init()
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
 	register_forward(FM_GetGameDescription, "Forward_GetGameDescription_pre", 0);
 
-	RegisterHam(Ham_Spawn, "player", "Ham_Spawn_post", 1, true);
+	RegisterHamPlayer(Ham_Spawn, "Ham_Spawn_post", 1);
 	RegisterHam(Ham_Item_Deploy, "weapon_knife", "Ham_Knife_Deploy_post", 1);
-	RegisterHam(Ham_Item_Deploy, "weapon_hegrenade", "Ham_Knife_Deploy_post", 1);
+	RegisterHam(Ham_Item_Deploy, "weapon_hegrenade", "Ham_He_Deploy_post", 1);
 
-	for(i = 0; i <= charsmax(g_szWeaponsList); i++)
-	{
-		DisableHamForward((g_HamPrimaryAttack[i] = RegisterHam(Ham_Weapon_PrimaryAttack, g_szWeaponsList[i], "Ham_BlockWeapon_post", 1)));
-		DisableHamForward((g_HamSecondaryAttack[i] = RegisterHam(Ham_Weapon_SecondaryAttack, g_szWeaponsList[i], "Ham_BlockWeapon_post", 1)));
-		DisableHamForward((g_HamItemDeploy[i] = RegisterHam(Ham_Item_Deploy, g_szWeaponsList[i], "Ham_BlockWeapon_post", 1)));
-	}
+	register_clcmd("drop", "clcmd_drop");
+}
+
+public clcmd_drop(id)
+{
+	if(get_user_weapon(id) == CSW_C4)
+		return PLUGIN_HANDLED;
+
+	return PLUGIN_CONTINUE;
 }
 
 public cswa_killed(ent, victim, killer)
@@ -167,25 +130,12 @@ public cswa_killed(ent, victim, killer)
 	ttt_set_playerdata(victim, PD_KILLEDBYITEM, get_weapon_edict(ent, REPL_CSWA_ITEMID));
 }
 
-public ttt_gamemode(gamemode)
-{
-	if(gamemode == PREPARING)
-		my_ham_hooks(true);
-	else if(gamemode == STARTED || gamemode == OFF)
-		my_ham_hooks(false);
-}
-
 public grenade_throw(id, ent, nade)
 {
 	if(nade == CSW_HEGRENADE && is_user_alive(id))
 	{
 		if(entity_get_float(ent, EV_FL_dmgtime) != 0.0)
-		{
-			static model[TTT_MAXFILELENGHT];
-			if(!model[0])
-				ArrayGetString(g_aGrenadeModels, 2, model, charsmax(model));
-			entity_set_model(ent, model);
-		}
+			entity_set_model(ent, g_szGrenadeModel[2]);
 	}
 }
 
@@ -233,21 +183,24 @@ public Forward_EmitSound_pre(id, channel, sample[])
 
 	if((equal(sample, "player/die", 10) || equal(sample, "player/death6.wav")) && !is_user_alive(id) && ttt_get_playerdata(id, PD_KILLEDBYITEM) > -1)
 		return FMRES_SUPERCEDE;
-	
-	if(equal(sample, "weapons/knife_", 14))
+
+	if(g_iKnifeID == -1)
 	{
-		new knife = ttt_knife_holding(id, 0), temp = ttt_knife_holding(id, 1);
-		if(!knife && (!temp || temp))
+		new name[TTT_ITEMLENGHT];
+		formatex(name, charsmax(name), "%L", LANG_SERVER, "TTT_ITEM_ID11");
+		g_iKnifeID = ttt_get_item_id(name);
+	}
+
+	if(equal(sample, "weapons/knife_", 14) && ttt_get_playerdata(id, PD_HOLDINGITEM) != g_iKnifeID)
+	{
+		switch(sample[17])
 		{
-			switch(sample[17])
-			{
-				case('b'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[0], 1.0, ATTN_NORM, 0, PITCH_NORM);
-				case('w'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[1], 1.0, ATTN_NORM, 0, PITCH_LOW);
-				case('s'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[3], 1.0, ATTN_NORM, 0, PITCH_NORM);
-				case('1', '2'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[2], random_float(0.5, 1.0), ATTN_NORM, 0, PITCH_NORM);
-			}
-			return FMRES_SUPERCEDE;
+			case('b'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[0], 1.0, ATTN_NORM, 0, PITCH_NORM);
+			case('w'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[1], 1.0, ATTN_NORM, 0, PITCH_LOW);
+			case('s'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[3], 1.0, ATTN_NORM, 0, PITCH_NORM);
+			case('1', '2'): emit_sound(id, CHAN_WEAPON, g_szCrowbarSound[2], random_float(0.5, 1.0), ATTN_NORM, 0, PITCH_NORM);
 		}
+		return FMRES_SUPERCEDE;
 	}
 
 	return FMRES_IGNORED;
@@ -265,44 +218,22 @@ public Ham_Spawn_post(id)
 	}
 }
 
-public Ham_BlockWeapon_post(const ent)
-{
-	new Float:time = get_roundtime()*(-1.0);
-	set_pdata_float(ent, m_flNextPrimaryAttack, time, LINUX_WEAPON_OFF);
-	set_pdata_float(ent, m_flNextSecondaryAttack, time, LINUX_WEAPON_OFF);
-}
-
 public Ham_Knife_Deploy_post(ent)
 {
 	new id = get_weapon_owner(ent);
 	if(is_user_alive(id))
 	{
-		static model[TTT_MAXFILELENGHT];
-		ArrayGetString(g_aCrowbarModels, 0, model, charsmax(model));
-		entity_set_string(id, EV_SZ_viewmodel, model);
-		ArrayGetString(g_aCrowbarModels, 1, model, charsmax(model));
-		entity_set_string(id, EV_SZ_weaponmodel, model);
+		entity_set_string(id, EV_SZ_viewmodel, g_szCrowbarModel[0]);
+		entity_set_string(id, EV_SZ_weaponmodel, g_szCrowbarModel[1]);
 	}
 }
 
-my_ham_hooks(val)
+public Ham_He_Deploy_post(ent)
 {
-	if(val)
+	new id = get_weapon_owner(ent);
+	if(is_user_alive(id))
 	{
-		for(new i = 0; i <= charsmax(g_szWeaponsList); i++)
-		{
-			EnableHamForward(g_HamPrimaryAttack[i]);
-			EnableHamForward(g_HamSecondaryAttack[i]);
-			EnableHamForward(g_HamItemDeploy[i]);
-		}
-	}
-	else
-	{
-		for(new i = 0; i <= charsmax(g_szWeaponsList); i++)
-		{
-			DisableHamForward(g_HamPrimaryAttack[i]);
-			DisableHamForward(g_HamSecondaryAttack[i]);
-			DisableHamForward(g_HamItemDeploy[i]);
-		}
+		entity_set_string(id, EV_SZ_viewmodel, g_szGrenadeModel[0]);
+		entity_set_string(id, EV_SZ_weaponmodel, g_szGrenadeModel[1]);
 	}
 }

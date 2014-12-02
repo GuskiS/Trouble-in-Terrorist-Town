@@ -1,6 +1,6 @@
 #include <amxmodx>
 #include <engine>
-#include <fakemeta>
+#include <hamsandwich>
 #include <cstrike>
 #include <ttt>
 
@@ -15,7 +15,7 @@ enum _:C4INFO
 	TIME
 }
 
-new const g_iWireColors[][] =
+new const g_szWireColors[][] =
 {
 	"Red",
 	"Green",
@@ -25,39 +25,16 @@ new const g_iWireColors[][] =
 	"Yellow"
 };
 
-new g_iPlayerWires[33][2][sizeof(g_iWireColors)];
+new g_iPlayerWires[33][2][sizeof(g_szWireColors)];
 new g_iPlayerC4[33];
 new g_iC4Info[MAX_C4][C4INFO];
+new g_pBombStatusForward;
 
 public plugin_init()
 {
 	register_plugin("[TTT] Defusing system", TTT_VERSION, TTT_AUTHOR);
-	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
-}
-
-public Forward_EmitSound_pre(id, channel, sample[])
-{
-	if(!is_user_alive(id) || ttt_return_check(id))
-		return;
-
-	if(equal(sample, "common/wpn_select.wav"))
-	{
-		new ent, body;
-		static classname[32];
-		get_user_aiming(id, ent, body);
-		entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
-
-		if(equal(classname, "grenade"))
-		{
-			entity_get_string(ent, EV_SZ_model, classname, charsmax(classname));
-			if(equal(classname, "models/w_c4.mdl"))
-			{
-				if(entity_range(id, ent) < 50.0)
-					ttt_wires_show(id, ent);
-				else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE3");
-			}
-		}
-	}
+	RegisterHam(Ham_Use, "grenade", "Ham_Use_pre", 0);
+	g_pBombStatusForward = CreateMultiForward("ttt_bomb_status", ET_IGNORE, FP_CELL, FP_CELL);
 }
 
 public bomb_planted(id)
@@ -65,41 +42,53 @@ public bomb_planted(id)
 	new c4 = -1;
 	while((c4 = find_ent_by_model(c4, "grenade", "models/w_c4.mdl")))
 	{
-		if(!entity_get_int(c4, EV_INT_iuser1))
-			set_task(0.2, "check_all", c4);
+		if(is_valid_ent(c4) && !entity_get_int(c4, EV_INT_iuser1))
+			set_task(0.2, "give_basic_values", c4);
 	}
 }
 
-public check_all(c4)
+public give_basic_values(c4)
 {
-	new index = c4_store(c4), timer = floatround(cs_get_c4_explode_time(c4) - get_gametime()), wires;
-	new maxtime = get_pcvar_num(get_cvar_pointer("ttt_c4_maxtime"))/sizeof(g_iWireColors);
+	new index = c4_store(c4);
+	new timer = floatround(cs_get_c4_explode_time(c4) - get_gametime());
+	new wires = timer / (get_pcvar_num(get_cvar_pointer("ttt_c4_maxtime"))/sizeof(g_szWireColors));
 
-	for(new i = 0; i < sizeof(g_iWireColors); i++)
-	{
-		if(timer > (maxtime * (i+1)))
-			wires++;
-	}
-
-	if(wires == 1)
+	if(wires < 2)
 		wires = 2;
+
+	static const right_wires[] =
+	{
+		0,
+		0,
+		1, // total 2
+		1, // 3
+		1, // 4
+		2, // 5
+		2  // 6
+	};
 
 	g_iC4Info[index][WIRES] = wires;
 	g_iC4Info[index][TIME] = timer;
+	g_iC4Info[index][RIGHT] = right_wires[wires];
+}
 
-	new Float:temp = ((wires-0.5)/wires)/0.5;
-	new ran = random_num(floatround_floor, floatround_ceil);
-	new rights = floatround(wires/temp, floatround_method:ran);
+public Ham_Use_pre(ent, id, idactivator, type, Float:value)
+{
+	if(type != 2 || value != 1.0 || !is_user_alive(idactivator))
+		return HAM_IGNORED;
 
-	if(wires == 2)
-		rights = 1;
-
-	g_iC4Info[index][RIGHT] = rights;
+	static Float:defuse_delay[33];
+	if(defuse_delay[idactivator] < get_gametime())
+	{
+		defuse_delay[idactivator] = get_gametime() + 1.0;
+		ttt_wires_show(idactivator, ent);
+	}
+	return HAM_SUPERCEDE;
 }
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == PREPARING || gamemode == RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
 		c4_clear(-1);
 		new num, id;
@@ -114,18 +103,6 @@ public ttt_gamemode(gamemode)
 	}
 }
 
-public reset_all(id)
-{
-	for(new i = 0; i <= charsmax(g_iWireColors); i++)
-	{
-		g_iPlayerWires[id][0][i] = -1;
-		g_iPlayerWires[id][1][i] = 0;
-	}
-
-	if(task_exists(id))
-		remove_task(id);
-}
-
 public ttt_wires_show(id, ent)
 {
 	reset_all(id);
@@ -135,9 +112,10 @@ public ttt_wires_show(id, ent)
 	param[0] = ent;
 	set_task(1.0, "check_distance", id, param, 1, "b");
 
+	new size = g_iC4Info[c4_get(ent)][WIRES];
 	new menu = menu_create("\rWires", "ttt_wires_handler");
-	for(new i = 0; i < g_iC4Info[c4_get(ent)][WIRES]; i++)
-		menu_additem(menu, g_iWireColors[g_iPlayerWires[id][0][i]], "", 0);
+	for(new i = 0; i < size; i++)
+		menu_additem(menu, g_szWireColors[g_iPlayerWires[id][0][i]], "", 0);
 
 	menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
 	menu_setprop(menu, MPROP_NOCOLORS, 1);
@@ -148,7 +126,7 @@ public ttt_wires_show(id, ent)
 
 public check_distance(param[], id)
 {
-	if(!is_valid_ent(param[0]) || entity_range(id, param[0]) > 50.0)
+	if(!is_valid_ent(param[0]) || entity_range(id, param[0]) > 60.0)
 	{
 		remove_task(id);
 		show_menu(id, 0, "^n", 1);
@@ -176,56 +154,56 @@ public ttt_wires_handler(id, menu, item)
 
 public get_c4_info(id, c4)
 {
-	if(!is_user_connected(id))
-		return;
-
 	g_iPlayerC4[id] = c4;
 	new size = g_iC4Info[c4_get(c4)][WIRES];
-	random_right(id, size, c4);
-
-	for(new i = 0; i < size; i++)
-		g_iPlayerWires[id][0][i] = random_order(id, size);
+	random_right(id, size, g_iC4Info[c4_get(c4)][RIGHT]);
+	random_order(id, size);
 }
 
 public random_order(id, size)
 {
-	new i, ran = -1;
+	new i, ran = -1, count;
 	while(ran == -1)
 	{
 		ran = random_num(0, size-1);
 		for(i = 0; i < size; i++)
+		{
 			if(g_iPlayerWires[id][0][i] == ran)
 				ran = -1;
-	}
+		}
+		if(ran != -1)
+		{
+			g_iPlayerWires[id][0][count] = ran;
+			count++;
+		}
 
-	return ran;
+		if(count >= size)
+			break;
+		else ran = -1;
+	}
 }
 
-public random_right(id, size, c4)
+public random_right(id, size, rights)
 {
-	new ran, ret, i, right = g_iC4Info[c4_get(c4)][RIGHT];
+	new count, ran, right = rights;
 	if(cs_get_user_defuse(id) && (size-right) != 1)
 		right++;
 
-	while(ret < right)
+	while(count < right)
 	{
-		for(i = 0; i < size; i++)
+		ran = random_num(0, size-1);
+		if(!g_iPlayerWires[id][1][ran])
 		{
-			ran = random_num(0, 1);
-			if(ran && !g_iPlayerWires[id][1][i])
-			{
-				ret++;
-				g_iPlayerWires[id][1][i] = ran;
-			}
-
-			if(ret >= right)
-				break;
+			// log_amx("RIGTS %d", ran);
+			g_iPlayerWires[id][1][ran] = 1;
+			count++;
 		}
 	}
 }
 
 public check_defusion(id, item, c4)
 {
+	new ret;
 	if(g_iPlayerWires[id][1][item])
 	{
 		message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("BarTime"), _, id);
@@ -235,12 +213,13 @@ public check_defusion(id, item, c4)
 		if(is_valid_ent(c4))
 			remove_entity(c4);
 
-		ttt_set_stats(id, STATS_BOMBD, ttt_get_player_stat(id, STATS_BOMBD)+1);
+		ExecuteForward(g_pBombStatusForward, ret, id, BS_DEFUSED);
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE1");
 	}
 	else
 	{
 		cs_set_c4_explode_time(c4, get_gametime()+0.5);
+		ExecuteForward(g_pBombStatusForward, ret, id, BS_FAILED);
 		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE2");
 	}
 
@@ -249,28 +228,26 @@ public check_defusion(id, item, c4)
 
 stock c4_store(c4)
 {
-	new i;
-	for(i = 0; i < MAX_C4; i++)
+	for(new i = 0; i < MAX_C4; i++)
 	{
 		if(!g_iC4Info[i][STORED])
 		{
 			g_iC4Info[i][STORED] = 1;
 			g_iC4Info[i][ENT] = c4;
-			break;
+			return i;
 		}
 	}
 
-	return i;
+	return -1;
 }
 
 stock c4_get(c4)
 {
-	new i;
-	for(i = 0; i < MAX_C4; i++)
+	for(new i = 0; i < MAX_C4; i++)
 		if(g_iC4Info[i][ENT] == c4)
-			break;
+			return i;
 
-	return i;
+	return -1;
 }
 
 stock c4_clear(c4)
@@ -285,4 +262,16 @@ stock c4_clear(c4)
 
 		if(c4 >= 0) break;
 	}
+}
+
+stock reset_all(id)
+{
+	for(new i = 0; i <= charsmax(g_szWireColors); i++)
+	{
+		g_iPlayerWires[id][0][i] = -1;
+		g_iPlayerWires[id][1][i] = 0;
+	}
+
+	if(task_exists(id))
+		remove_task(id);
 }

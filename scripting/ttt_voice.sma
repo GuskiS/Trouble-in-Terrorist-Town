@@ -4,13 +4,13 @@
 #include <engine>
 #include <ttt>
 
-new g_iSpecialTalking[33][Special], g_pMsgTeamInfo;
+new g_iSpecialTalking[33][PLAYER_CLASS], g_pMsgTeamInfo;
 
 public plugin_init()
 {
 	register_plugin("[TTT] Voice", TTT_VERSION, TTT_AUTHOR);
 
-	RegisterHam(Ham_Killed, "player", "Ham_Killed_post", 1, true);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 	register_forward(FM_Voice_SetClientListening, "Forward_SetClientListening_pre", 0);
 
 	register_clcmd("+specialvoice", "cmd_voiceon");
@@ -21,7 +21,7 @@ public plugin_init()
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == PREPARING || gamemode == RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
 		new num, id;
 		static players[32];
@@ -29,8 +29,8 @@ public ttt_gamemode(gamemode)
 		for(--num; num >= 0; num--)
 		{
 			id = players[num];
-			g_iSpecialTalking[id][TRAITOR] = false;
-			g_iSpecialTalking[id][DETECTIVE] = false;
+			g_iSpecialTalking[id][PC_TRAITOR] = false;
+			g_iSpecialTalking[id][PC_DETECTIVE] = false;
 		}
 	}
 }
@@ -40,8 +40,8 @@ public Ham_Killed_post(victim, killer, shouldgib)
 	if(ttt_return_check(victim))
 		return;
 
-	g_iSpecialTalking[victim][TRAITOR] = false;
-	g_iSpecialTalking[victim][DETECTIVE] = false;
+	g_iSpecialTalking[victim][PC_TRAITOR] = false;
+	g_iSpecialTalking[victim][PC_DETECTIVE] = false;
 }
 
 public Forward_SetClientListening_pre(receiver, sender, bool:listen)
@@ -55,7 +55,7 @@ public Forward_SetClientListening_pre(receiver, sender, bool:listen)
 		return FMRES_SUPERCEDE;
 	}
 
-	new restate = ttt_get_special_state(receiver), sestate = ttt_get_special_state(sender);
+	new restate = ttt_get_playerstate(receiver), sestate = ttt_get_playerstate(sender);
 	switch(is_user_alive(sender))
 	{
 		case 1: // ALIVE
@@ -86,8 +86,8 @@ public Forward_SetClientListening_pre(receiver, sender, bool:listen)
 
 public cmd_voiceon(id)
 {
-	new getstate = ttt_get_special_state(id);
-	if(getstate == TRAITOR || getstate == DETECTIVE)
+	new getstate = ttt_get_playerstate(id);
+	if(getstate == PC_TRAITOR || getstate == PC_DETECTIVE)
 	{
 		client_cmd(id, "+voicerecord");
 		g_iSpecialTalking[id][getstate] = true;
@@ -99,8 +99,8 @@ public cmd_voiceon(id)
 
 public cmd_voiceoff(id)
 {
-	new getstate = ttt_get_special_state(id);
-	if(getstate == TRAITOR || getstate == DETECTIVE)
+	new getstate = ttt_get_playerstate(id);
+	if(getstate == PC_TRAITOR || getstate == PC_DETECTIVE)
 	{
 		client_cmd(id, "-voicerecord");
 		g_iSpecialTalking[id][getstate] = false;
@@ -119,7 +119,7 @@ stock voice_check(id, type, getstate)
 	{
 		i = players[num];
 		//if(id == i) continue;
-		if(getstate == ttt_get_special_state(i))
+		if(getstate == ttt_get_playerstate(i))
 		{
 			message_begin(MSG_ONE_UNRELIABLE, g_pMsgTeamInfo, _, i);
 			write_byte(id);

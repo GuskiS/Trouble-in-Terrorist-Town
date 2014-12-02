@@ -7,7 +7,7 @@
 
 new g_iHasDeathStation[33], g_iSetupItem[33] = {-1, -1, ...}, g_iItem_Backpack[33];
 new cvar_price_ds, g_iItem_DeathStation, g_iItemBought;
-new g_szDeathStationModel[TTT_MAXFILELENGHT];
+new g_szDeathStationModel[TTT_FILELENGHT];
 
 public plugin_precache()
 {
@@ -30,9 +30,10 @@ public plugin_init()
 	register_think(TTT_DEATHSTATION, "DeathStation_Think");
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
 
-	new name[TTT_ITEMNAME];
+	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID8");
-	g_iItem_DeathStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_ds), TRAITOR);
+	g_iItem_DeathStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_ds), PC_TRAITOR);
+	ttt_item_exception(g_iItem_DeathStation);
 }
 
 public ttt_gamemode(gamemode)
@@ -40,10 +41,10 @@ public ttt_gamemode(gamemode)
 	if(!g_iItemBought)
 		return;
 
-	if(gamemode == ENDED || gamemode == RESTARTING)
+	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 		remove_entity_name(TTT_DEATHSTATION);
 
-	if(gamemode == PREPARING || gamemode == RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
 		new num, id;
 		static players[32];
@@ -114,7 +115,7 @@ public Forward_EmitSound_pre(id, channel, sample[])
 			if(equal(classname, TTT_DEATHSTATION))
 			{
 				ttt_set_playerdata(id, PD_KILLEDBYITEM, g_iItem_DeathStation);
-				ExecuteHamB(Ham_Killed, id, entity_get_int(ent, EV_INT_iuser1), false);
+				ExecuteHamB(Ham_Killed, id, entity_get_int(ent, EV_INT_iuser1), 2);
 			}
 		}
 	}
@@ -158,7 +159,7 @@ public DeathStation_Think(ent)
 	if(g_iSetupItem[id] == -1)
 		return;
 
-	static data[SetupData];
+	static data[SETUP_DATA];
 	ttt_item_setup_get(g_iSetupItem[id], data);
 
 	if(data[SETUP_ITEMTIME] != 0)

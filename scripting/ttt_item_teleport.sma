@@ -12,9 +12,9 @@ public plugin_init()
 	cvar_price_tele		= my_register_cvar("ttt_price_tele", "1");
 	cvar_teleport_wait	= my_register_cvar("ttt_teleport_wait", "5.0");
 
-	new name[TTT_ITEMNAME];
+	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID12");
-	g_iItem_Teleporter = ttt_buymenu_add(name, get_pcvar_num(cvar_price_tele), DETECTIVE);
+	g_iItem_Teleporter = ttt_buymenu_add(name, get_pcvar_num(cvar_price_tele), PC_DETECTIVE);
 }
 
 public ttt_gamemode(gamemode)
@@ -22,7 +22,7 @@ public ttt_gamemode(gamemode)
 	if(!g_iItemBought)
 		return;
 
-	if(gamemode == PREPARING || gamemode == RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
 		new num, id;
 		static players[32];
@@ -43,7 +43,7 @@ public ttt_item_selected(id, item, name[], price)
 {
 	if(g_iItem_Teleporter == item)
 	{
-		static out[TTT_ITEMNAME];
+		static out[TTT_ITEMLENGHT];
 		g_iHasTeleporter[id] = true;
 		formatex(out, charsmax(out), "%L", id, "TTT_ITEM_TELE1", 0.0, 0.0, 0.0);
 		g_iItem_Coordinates[id] = ttt_backpack_add(id, out);
@@ -67,7 +67,7 @@ public ttt_item_backpack(id, item, name[])
 			if(entity_get_int(id, EV_INT_flags) & FL_DUCKING)
 				g_fPlayerOrigin[id][2] += 40.0;
 
-			static out[TTT_ITEMNAME];
+			static out[TTT_ITEMLENGHT];
 			formatex(out, charsmax(out), "%L", id, "TTT_ITEM_TELE1", g_fPlayerOrigin[id][0], g_fPlayerOrigin[id][1], g_fPlayerOrigin[id][2]);
 			g_iItem_Coordinates[id] = ttt_backpack_add(id, out);
 

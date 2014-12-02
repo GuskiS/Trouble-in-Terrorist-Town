@@ -34,7 +34,7 @@ public ttt_gamemode(gamemode)
 	if(!g_iJBMap)
 		return;
 
-	if(gamemode == PREPARING)
+	if(gamemode == GAME_PREPARING)
 	{
 		set_task(1.0, "jail_open");
 		g_fRoundTime = 0.0;
@@ -58,7 +58,7 @@ public pfn_keyvalue(ent)
 
 public jail_open_id(id)
 {
-	new Float:cvar = get_pcvar_float(cvar_cell_open_delay), Float:round = get_roundtime();
+	new Float:cvar = get_pcvar_float(cvar_cell_open_delay), Float:round = ttt_get_roundtime();
 	if(round > g_fRoundTime+cvar)
 	{
 		g_fRoundTime = round;

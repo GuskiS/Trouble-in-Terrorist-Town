@@ -15,79 +15,57 @@
 #endif
 
 /**
- * Gets/sets players state.
+ * Sets players state.
  *
- * @param id				Player index.
- * @param Special			New state, enum Special.
- * @return					Special state.
+ * @param id			Player index.
+ * @param PLAYER_STATE	New state, enum PLAYER_STATE.
  */
-native ttt_get_special_state(id);
-native ttt_set_special_state(id, Special);
+native ttt_set_specialstate(id, PLAYER_STATE);
 
 /**
- * Gets/sets special count.
+ * Returns special count.
  *
- * @param Special			Special state.
- * @param num				1(++), -1(--), 0(nulled)
- * @return					Number of specials.
+ * @param PLAYER_STATE	PLAYER_STATE enum.
+ * @return				Number of specials.
  */
-native ttt_get_special_count(Special);
-native ttt_set_special_count(Special, num); // num = 1(++), -1(--) or 0(nulled)
+native ttt_get_specialcount(PLAYER_STATE);
 
 /**
  * Returns roundtime.
  *
- * @return					Roundtime.
+ * @return		Roundtime.
  */
-native Float:get_roundtime();
+native Float:ttt_get_roundtime();
 
 /**
- * Gets/sets players data.
+ * Sets/returns players data.
  *
  * @param id				Player index.
- * @param PlayerData		Enum PlayerData.
- * @param newdata			New data.
+ * @param PLAYER_DATA		Enum PLAYER_DATA.
+ * @param newvalue			New value to set.
  * @return					Data.
  */
-native ttt_get_playerdata(id, PlayerData);
-native ttt_set_playerdata(id, PlayerData, newdata);
+native ttt_get_playerdata(id, PLAYER_DATA);
+native ttt_set_playerdata(id, PLAYER_DATA, newvalue);
 
 /**
- * Too hard to explain, don't use it.
+ * Sets/returns game state.
  *
- * @param killer			Player index.
- * @param victim			Player index.
- * @param modifier			For example, KARMATEMP.
- * @param type				1 killed, 0 damage.
- * @param when				Victim alive or dead.
+ * @param GLOBAL_INFO		Enum GLOBAL_INFO.
+ * @param newvalue			New value to set.
+ * @return					value.
  */
-native ttt_set_karma_modifier(killer, victim, modifier, type, when);
+native ttt_get_globalinfo(GLOBAL_INFO);
+native ttt_set_globalinfo(GLOBAL_INFO, newvalue);
 
 /**
- * Gets/sets game state.
+ * Sets/returns game winner. Also, ends round if still active.
  *
- * @param which				Sets new game state.
- * @return					Game state.
- */
-native ttt_get_game_state();
-native ttt_set_game_state(which);
-
-/**
- * Gets/sets game winner. Also, ends round if still active.
- *
- * @param team				INNOCENT or TRAITOR.
- * @return					Game winner.
+ * @param team			INNOCENT or TRAITOR.
+ * @return				Game winner.
  */
 native ttt_get_winner();
 native ttt_set_winner(team);
-
-/**
- * Returns if player's name is visible.
- *
- * @param id				Player index.
- * @return					True or false.
- */
-native ttt_get_hide_name(id);
 
 /**
  * Adds item to Buymenu and returns id.
@@ -98,16 +76,6 @@ native ttt_get_hide_name(id);
  * @return					Item id.
  */
 native ttt_buymenu_add(const name[], const price, const team);
-
-/**
- * Adds item to Buymenu and returns id.
- *
- * @param item_id			Item id.
- * @param name[]			Items name.
- * @param charsmax			Items name size-1.
- * @return					name.
- */
-native ttt_get_item_name(item_id, name[], charsmax);
 
 /**
  * Adds item to Backpack and returns id.
@@ -135,23 +103,15 @@ native ttt_backpack_remove(owner, itemid);
 native ttt_backpack_show(owner);
 
 /**
- * Returns player's state when he was/is alive.
- *
- * @param id				Players id.
- * @return					state
- */
-native ttt_get_special_alive(id);
-
-/**
  * Gets/sets/clears players dead body data.
  *
  * @param id				Players id.
- * @param BodyData			Enum BodyData.
- * @param newdata			New data.
- * @return					Data.
+ * @param BODY_DATA			Enum BODY_DATA.
+ * @param newvalue			New value to set.
+ * @return					data.
  */
-native ttt_get_bodydata(id, BodyData);
-native ttt_set_bodydata(id, BodyData, newdata);
+native ttt_get_bodydata(id, BODY_DATA);
+native ttt_set_bodydata(id, BODY_DATA, newvalue);
 native ttt_clear_bodydata(id);
 
 /**
@@ -164,7 +124,7 @@ native ttt_clear_bodydata(id);
  * @param tracer			Detective who can see DNA.
  * @param active			Is DNA seeable.
  * @param name[]			Items name.
- * @return					Setupid.
+ * @return					setupid.
  */
 native ttt_item_setup_add(id, ent, time, owner, tracer, active, name[]);
 
@@ -185,6 +145,24 @@ native ttt_item_setup_update(setupid, array[]);
 native ttt_item_setup_get(setupid, array[]);
 
 /**
+ * Gets item name from item_id.
+ *
+ * @param item_id			Item id.
+ * @param name[]			Items name.
+ * @param charsmax			Items name size-1.
+ * @return					name.
+ */
+native ttt_get_item_name(item_id, name[], charsmax);
+
+/**
+ * Gets item_id from item name.
+ *
+ * @param name[]			Items name.
+ * @return					Item id.
+ */
+native ttt_get_item_id(name[]);
+
+/**
  * Checks if selected entity is setuped for DNA tracking.
  *
  * @param ent				Entity id.
@@ -193,40 +171,12 @@ native ttt_item_setup_get(setupid, array[]);
 native ttt_is_item_setup(ent);
 
 /**
- * Returns if player has knife with condition.
- *
- * @param id				Players id.
- * @param temp				0 just checks if has been bought, 1 if is active.
- * @return 					True or false.
- */
-native ttt_knife_holding(id, temp);
-
-/**
- * Returns if DNA scanner is active - player holds it.
- *
- * @param id				Players id.
- * @return 					True or false.
- */
-native ttt_is_dnas_active(id);
-
-/**
  * Logs your message to files.
  *
- * @param type				Enum LogMessages.
+ * @param type				Enum LOG_MESSAGES.
  * @param msg[]				Your message.
  */
-native ttt_log_to_file(type, msg[]);
-
-/**
- * Sets/gets player stats.
- *
- * @param id				Players id.
- * @param stat				Enum Stats.
- * @param num				New value.
- * @return					Stats.
- */
-native ttt_set_player_stat(id, stat, num);
-native ttt_get_player_stat(id, stat);
+native ttt_logging(LOG_MESSAGES, msg[]);
 
 /**
  * Register cvar to file.
@@ -236,6 +186,35 @@ native ttt_get_player_stat(id, stat);
  * @return						true/false.
  */
 native ttt_register_cvar(name[], string[]);
+
+/**
+ * Sets/gets player stats.
+ *
+ * @param id				Players id.
+ * @param PLAYER_STATS		Enum PLAYER_STATS.
+ * @param newvalue			New value to set.
+ * @return					stat.
+ */
+native ttt_get_stats(id, PLAYER_STATS);
+native ttt_set_stats(id, PLAYER_STATS, newvalue);
+
+/**
+ * Sets/gets player warnings.
+ *
+ * @param id				Player id.
+ * @param array[]			Player warning array.
+ * @return					true/false.
+ */
+native ttt_get_warnings(id, array[]);
+native ttt_set_warnings(id, array[]);
+
+/**
+ * Sets item as exception in karma reduction.
+ *
+ * @param item				Item id.
+ * @return					true/false.
+ */
+native ttt_item_exception(item);
 
 /**
  * Called when player bought item.
@@ -266,7 +245,7 @@ forward ttt_gamemode(mode);
 /**
  * Called when winner is set.
  *
- * @param winner			Winner.
+ * @param winner			winner.
  */
 forward ttt_winner(winner);
 
@@ -277,5 +256,13 @@ forward ttt_winner(winner);
  * @param ent				Entity id.
  */
 forward ttt_spawnbody(owner, ent);
+
+/**
+ * Called when player interacts with bomb.
+ *
+ * @param id				Player id.
+ * @param status			BOMB_STATUS enum.
+ */
+forward ttt_bomb_status(id, status);
 
 #include <ttt_stocks>

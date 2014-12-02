@@ -7,6 +7,7 @@
 	#include <ttt>
 #endif
 
+#define LOG_MSG_SIZE 200
 stock const death_messages[][] =
 {
 	"TTT_KILL_SUICIDE",
@@ -43,21 +44,39 @@ stock is_dead_body(classname[])
 
 stock ttt_return_check(id)
 {
-	new game = ttt_get_game_state();
-	if(!is_user_connected(id) || game == OFF || game == ENDED)
+	new game = ttt_get_gamemode();
+	if(!is_user_connected(id) || game == GAME_OFF || game == GAME_ENDED)
 		return 1;
 
 	return 0;
 }
 
-stock ttt_set_stats(id, stat, num)
-{
-	static pointer;
-	if(!pointer)
-		pointer = get_cvar_pointer("ttt_stats");
+stock ttt_get_gamemode()
+	return ttt_get_globalinfo(GI_GAMEMODE);
 
-	if(pointer && get_pcvar_num(pointer))
-		ttt_set_player_stat(id, stat, num);
+stock ttt_get_playerstate(id)
+	return ttt_get_playerdata(id, PD_PLAYERSTATE);
+
+stock ttt_get_alivestate(id)
+{
+	if(!is_user_alive(id))
+		return ttt_get_playerdata(id, PD_KILLEDSTATE);
+
+	return ttt_get_playerstate(id);
+}
+
+stock escape_mysql(string[], len)
+{
+	replace_all(string, len, "\\", "\\\\");
+	replace_all(string, len, "\0", "\\0");
+	replace_all(string, len, "\n", "\\n");
+	replace_all(string, len, "\r", "\\r");
+	replace_all(string, len, "\x1a", "\Z");
+	replace_all(string, len, "'", "\'");
+	replace_all(string, len, "%", "\%");
+	replace_all(string, len, "#", "\#");
+	replace_all(string, len, ";", "\;");
+	replace_all(string, len, "_", "\_");
 }
 
 stock auto_exec_config(const szName[])
@@ -143,18 +162,18 @@ stock ttt_make_deathmsg(killer, victim, headshot, const weapon[], flags)
 
 	static const cvar_state[] =
 	{
-		(1<<0),	// a = NONE,
+		(1<<0),	// a = PC_NONE,
 		(1<<1),	// b = TRAITOR,
 		(1<<2),	// c = DETECTIVE,
 		(1<<3),	// d = INNOCENT,
-		(1<<4),	// e = DEAD,
-		(1<<5),	// f = SPECIAL,
+		(1<<4),	// e = PC_DEAD,
+		(1<<5),	// f = PC_SPECIAL,
 		(1<<6),	// g = show victim
 		(1<<7)	// h = show killer
 	};
 
-	static const size = Special+2;
-	new show[Special+2];
+	static const size = PLAYER_CLASS+2;
+	new show[PLAYER_CLASS+2];
 	for(new i; i < size; i++)
 	{
 		if(flags & cvar_state[i])
@@ -171,16 +190,16 @@ stock ttt_make_deathmsg(killer, victim, headshot, const weapon[], flags)
 	for(--num; num >= 0; num--)
 	{
 		i = players[num];
-		specstate = ttt_get_special_state(i);
+		specstate = ttt_get_playerstate(i);
 		
 		should = false;
-		if(i == victim && show[Special])
+		if(i == victim && show[PLAYER_CLASS])
 			should = true;
-		else if(i == killer && show[Special+1])
+		else if(i == killer && show[PLAYER_CLASS+1])
 			should = true;
 		else
 		{
-			for(j = 0; j < Special; j++)
+			for(j = 0; j < PLAYER_CLASS; j++)
 			{
 				if(specstate == show[j])
 				{
@@ -232,7 +251,7 @@ stock ttt_get_kill_message(victim, killer, message[], len, type=0)
 			{
 				static name[32];
 				get_user_name(killer, name, charsmax(name));
-				formatex(message, len, "[%L] %s with %s", LANG_PLAYER, special_names[ttt_get_special_alive(killer)], name, weapmsg);
+				formatex(message, len, "[%L] %s with %s", LANG_PLAYER, special_names[ttt_get_alivestate(killer)], name, weapmsg);
 			}
 			else formatex(message, len, "%s", weapmsg);
 		}
@@ -244,18 +263,83 @@ stock ttt_get_kill_message(victim, killer, message[], len, type=0)
 	return 0;
 }
 
+stock ttt_log_api_error(text[], plugin, params, any:...)
+{
+	static plugin_name[32], msg[LOG_MSG_SIZE];
+	get_plugin(plugin, plugin_name, charsmax(plugin_name));
+	vformat(msg, charsmax(msg), text, 4);
+	ttt_log_to_file(LOG_ERROR, "%s (params %d, plugin: %s)", msg, params, plugin_name);
+	return 0;
+}
+
+stock ttt_log_to_file(type, text[], any:...)
+{
+	static msg[LOG_MSG_SIZE];
+	vformat(msg, charsmax(msg), text, 3);
+	ttt_logging(type, msg);
+}
+
+stock find_dead_body_1d(id, array[], count)
+{
+	new Float:fOrigin[2][3], origin[3];
+	entity_get_vector(id, EV_VEC_origin, fOrigin[0]);
+	get_user_origin(id, origin, 3);
+	IVecFVec(origin, fOrigin[1]);
+	if(get_distance_f(fOrigin[0], fOrigin[1]) > 60.0)
+		return 0;
+
+	for(new ent, i = 0; i < count; i++)
+	{
+		ent = array[i];
+		if(!is_valid_ent(ent) || !is_visible(id, ent))
+			continue;
+
+		if(get_dat_deadbody(ent, fOrigin[0], fOrigin[1]))
+			return ent;
+	}
+
+	return 0;
+}
+
+stock find_dead_body_2d(id, array[33][])
+{
+	new Float:fOrigin[2][3], origin[3];
+	entity_get_vector(id, EV_VEC_origin, fOrigin[0]);
+	get_user_origin(id, origin, 3);
+	IVecFVec(origin, fOrigin[1]);
+	if(get_distance_f(fOrigin[0], fOrigin[1]) > 60.0)
+		return 0;
+
+	for(new ent, i = 0; i < 33; i++)
+	{
+		ent = array[i][BODY_ENTID];
+		if(!is_valid_ent(ent) || !is_visible(id, ent))
+			continue;
+
+		if(get_dat_deadbody(ent, fOrigin[0], fOrigin[1]))
+			return ent;
+	}
+
+	return 0;
+}
+
 stock get_dat_deadbody(ent, Float:startOrigin[3], Float:endOrigin[3])
 {
 	if(!is_valid_ent(ent))
 		return false;
 
+	new ptr = create_tr2();
 	xs_vec_sub(endOrigin, startOrigin, endOrigin);
 	xs_vec_mul_scalar(endOrigin, 10.0, endOrigin);
 	xs_vec_add(startOrigin, endOrigin, endOrigin);
-	engfunc(EngFunc_TraceModel, startOrigin, endOrigin, HULL_POINT, ent, 0);
-	if(get_tr2(0, TR_pHit) == ent)
+	engfunc(EngFunc_TraceModel, startOrigin, endOrigin, HULL_POINT, ent, ptr);
+	if(get_tr2(ptr, TR_pHit) == ent)
+	{
+		free_tr2(ptr);
 		return true;
+	}
 
+	free_tr2(ptr);
 	return false;
 }
 
@@ -289,7 +373,7 @@ stock set_attrib_special(id, msg, special1, special2=-1, special3=-1, special4=-
 	for(--num; num >= 0; num--)
 	{
 		i = players[num];
-		specstate = ttt_get_special_state(i);
+		specstate = ttt_get_playerstate(i);
 		if(specstate == special1 || specstate == special2 || specstate == special3 || specstate == special4)
 		{
 			message_begin(MSG_ONE_UNRELIABLE, g_Msg_ScoreAttrib, _, i);
@@ -304,7 +388,10 @@ stock move_grenade()
 {
 	new ent = -1;
 	while((ent = find_ent_by_class(ent, "grenade")))
-		entity_set_origin(ent, Float:{-8191.0, -8191.0, -8191.0});
+	{
+		if(is_valid_ent(ent))
+			entity_set_origin(ent, Float:{-8191.0, -8191.0, -8191.0});
+	}
 
 	return 1;
 }
@@ -348,60 +435,61 @@ stock strip_weapons(id)
 	remove_user_shield(id);
 }
 
-stock ham_strip_weapon(index, const weapon[])
+stock ham_strip_weapon(id, const weapon[])
 {
-	if(!is_user_alive(index))
-		return false;
+	if(!is_user_alive(id))
+		return 0;
 
-	new weaponid = get_weaponid(weapon);
-	if(!weaponid)
-		return false;
+	new weapon_ent = find_ent_by_owner(-1, weapon, id);
+	if(!weapon_ent)
+		return 0;
 
-	new weapon_ent = fm_find_ent_by_owner(-1, weapon, index);
-	if (!weapon_ent)
-		return false;
+	new weapon_id = get_weaponid(weapon);
+	if(!weapon_id)
+		return 0;
 
-	new current_weapon_ent = fm_cs_get_current_weapon_ent(index);
-	new current_weapon = pev_valid(current_weapon_ent) ? cs_get_weapon_id(current_weapon_ent) : -1;
-	if(current_weapon == weaponid)
+	if(get_user_weapon(id) == weapon_id)
 		ExecuteHamB(Ham_Weapon_RetireWeapon, weapon_ent);
 
-	if (!ExecuteHamB(Ham_RemovePlayerItem, index, weapon_ent))
-		return false;
+	if(!ExecuteHamB(Ham_RemovePlayerItem, id, weapon_ent))
+		return 0;
 
-	user_has_weapon(index, weaponid, 0);
+	user_has_weapon(id, weapon_id, 0);
 	ExecuteHamB(Ham_Item_Kill, weapon_ent);
-	remove_user_shield(index);
-	//set_pev(index, pev_weapons, pev(index, pev_weapons) & ~(1<<weaponid));
+	remove_user_shield(id);
+	//set_pev(id, pev_weapons, pev(id, pev_weapons) & ~(1<<weapon_id));
 
-	return true;
+	return 1;
 }
 
 stock ham_give_weapon(id, weapon[], val = 0)
 {
 	if(!is_user_alive(id))
-		return false;
+		return 0;
 
-	if(!equal(weapon, "weapon_",7)) return 0;
+	if(!equal(weapon, "weapon_", 7))
+		return 0;
 
-	new wEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, weapon));
-	if(!pev_valid(wEnt)) return 0;
+	new ent = create_entity(weapon);
+	if(!is_valid_ent(ent))
+		return 0;
 
-	set_pev(wEnt, pev_spawnflags, SF_NORESPAWN);
-	dllfunc(DLLFunc_Spawn, wEnt);
+	entity_set_int(ent, EV_INT_spawnflags, SF_NORESPAWN);
+	DispatchSpawn(ent);
 
-	if(!ExecuteHamB(Ham_AddPlayerItem, id, wEnt))
+	if(!ExecuteHamB(Ham_AddPlayerItem, id, ent))
 	{
-		if(pev_valid(wEnt)) set_pev(wEnt, pev_flags, pev(wEnt, pev_flags) | FL_KILLME);
+		if(is_valid_ent(ent))
+			entity_set_int(ent, EV_INT_flags, entity_get_int(ent, EV_INT_flags) | FL_KILLME);
 		return 0;
 	}
 
-	ExecuteHamB(Ham_Item_AttachToPlayer, wEnt, id);
+	ExecuteHamB(Ham_Item_AttachToPlayer, ent, id);
 	if(val && !is_user_bot(id))
 		//ExecuteHamB(Ham_Item_Deploy, fm_find_ent_by_owner(-1, weapon, id));
 		show_weapon(id, weapon);
 
-	return wEnt;
+	return ent;
 }
 
 stock show_weapon(id, weapon[])
@@ -412,7 +500,7 @@ stock show_weapon(id, weapon[])
 
 	new weaponid = get_weaponid(weapon);
 	if(user_has_weapon(id, weaponid))
-		ExecuteHamB(Ham_Item_Deploy, fm_find_ent_by_owner(-1, weapon, id));
+		ExecuteHamB(Ham_Item_Deploy, find_ent_by_owner(-1, weapon, id));
 
 	engclient_cmd(id, weapon);
 
@@ -423,37 +511,42 @@ stock show_weapon(id, weapon[])
 	emessage_end();
 }
 
-stock fm_find_ent_by_owner(entity, const classname[], owner)
-{
-	while ((entity = engfunc(EngFunc_FindEntityByString, entity, "classname", classname)) && pev(entity, pev_owner) != owner) { /* keep looping */ }
-	return entity;
-}
-
-stock fm_find_ent_by_class(entity, const classname[])
-	return engfunc(EngFunc_FindEntityByString, entity, "classname", classname);
-
-stock fm_cs_get_current_weapon_ent(id)
-{
-	if(pev_valid(id) != 2)
-		return -1;
-
-	return get_pdata_cbase(id, 373);
-}
-
 stock remove_user_shield(id)
 {
-    if(get_pdata_bool(id, 2043))								//m_bHasShield
-    {
-        set_pdata_bool(id, 2043, false);						//m_bHasShield
-        set_pdata_int(id, 116, 0);								// m_fHasPrimary
-        set_pdata_bool(id, 2042, false);						// m_bUsesShield
-        set_pev(id, pev_gamestate, 1);
-        new iHideHUD = get_pdata_int(id, 361);					// m_iHideHUD
-        if(iHideHUD & (1<<7))
-            set_pdata_int(id, 361, iHideHUD & ~(1<<7));	// m_iHideHUD
+	#if AMXX_VERSION_NUM >= 183
+	if(get_pdata_bool(id, 2043))								//m_bHasShield
+	{
+		set_pdata_bool(id, 2043, false);						//m_bHasShield
+		set_pdata_int(id, 116, 0);								// m_fHasPrimary
+		set_pdata_bool(id, 2042, false);						// m_bUsesShield
+		set_pev(id, pev_gamestate, 1);
+		new iHideHUD = get_pdata_int(id, 361);					// m_iHideHUD
+		if(iHideHUD & (1<<7))
+			set_pdata_int(id, 361, iHideHUD & ~(1<<7));	// m_iHideHUD
 
-        return 1;
-    }
+		return 1;
+	}
 
-    return -id;
+	#endif
+	return -id;
+}
+
+stock is_holding_dna_scanner(id)
+{
+	static DNAScannerID;
+	if(!DNAScannerID)
+	{
+		new name[TTT_ITEMLENGHT];
+		formatex(name, charsmax(name), "%L", LANG_SERVER, "TTT_ITEM_ID5");
+		DNAScannerID = ttt_get_item_id(name);
+	}
+
+	if(get_user_weapon(id) == CSW_C4)
+	{
+		new ent = find_ent_by_owner(-1, "weapon_c4", id);
+		if(get_weapon_edict(ent, REPL_CSWA_SET) == 2 && get_weapon_edict(ent, REPL_CSWA_ITEMID) == DNAScannerID)
+			return 1;
+	}
+
+	return 0;
 }

@@ -3,13 +3,14 @@
 #include <fakemeta>
 #include <hamsandwich>
 #include <cstrike>
+#include <cs_weapons_api>
 #include <ttt>
 #include <xs>
 #include <amx_settings_api>
 
 #define MAX_C4 5
 
-new const g_c4_sounds[][] =
+new const g_szC4Sounds[][] =
 {
 	"weapons/c4_beep1.wav",
 	"weapons/c4_beep2.wav",
@@ -34,12 +35,12 @@ enum _:C4INFO
 
 new g_iC4Info[MAX_C4][C4INFO], g_iItem_C4, g_iC4Time[33], g_iSetupItem[33] = {-1, -1, ...};
 new cvar_c4_maxtime, cvar_c4_mintime, cvar_c4_default, cvar_c4_elapsed, cvar_price_c4;
-new g_iC4Sync[MAX_C4], Float:g_fWaitTime[33], g_iC4Sprite, g_iItemBought;
+new g_iC4Sync[MAX_C4], Float:g_fWaitTime[33], g_iC4Sprite, g_iItemBought, g_pBombStatusForward;
 
 public plugin_precache()
 {
-	Create_BombTarget();
-	new sprites[TTT_MAXFILELENGHT];
+	// Create_BombTarget();
+	new sprites[TTT_FILELENGHT];
 	if(!amx_load_setting_string(TTT_SETTINGSFILE, "C4", "Sprite", sprites, charsmax(sprites)))
 	{
 		amx_save_setting_string(TTT_SETTINGSFILE, "C4", "Sprite", g_szC4Sprite);
@@ -64,44 +65,55 @@ public plugin_init()
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
 	register_forward(FM_CmdStart, "Forward_CmdStart_pre", 0);
 	register_think(TTT_C4_SUB, "C4_Think");
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
+
+	g_pBombStatusForward = CreateMultiForward("ttt_bomb_status", ET_IGNORE, FP_CELL, FP_CELL);
 
 	register_clcmd("Set_C4Timer", "C4Timer");
 	for(new i = 0; i <= charsmax(g_iC4Sync); i++)
 		g_iC4Sync[i] = CreateHudSyncObj();
 
-	new name[TTT_ITEMNAME];
+	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID0");
-	g_iItem_C4 = ttt_buymenu_add(name, get_pcvar_num(cvar_price_c4), TRAITOR);
+	g_iItem_C4 = ttt_buymenu_add(name, get_pcvar_num(cvar_price_c4), PC_TRAITOR);
+	ttt_item_exception(g_iItem_C4);
 }
 
 public client_putinserver(id)
 	g_iC4Time[id] = get_pcvar_num(cvar_c4_default);
 
+public Ham_Killed_post(victim, killer)
+{
+	new ent = find_ent_by_model(-1, "weaponbox", "models/w_backpack.mdl");
+	if(is_valid_ent(ent))
+		remove_entity(ent);
+}
+
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == ENDED || gamemode == RESTARTING)
+	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 	{
 		set_pcvar_num(get_cvar_pointer("mp_c4timer"), get_pcvar_num(cvar_c4_default));
 		remove_entity_name("func_bomb_target");
 		remove_entity_name("info_bomb_target");
 	}
 	
-	if(gamemode == PREPARING || gamemode == RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
 		Create_BombTarget();
 
 		if(!g_iItemBought)
 			return;
 
-		c4_clear();
-		new num, id;
+		c4_clear_all();
+		new num, id, cvar = get_pcvar_num(cvar_c4_default);
 		static players[32];
 		get_players(players, num);
 		for(--num; num >= 0; num--)
 		{
 			id = players[num];
 			g_iSetupItem[id] = -1;
-			g_iC4Time[id] = get_pcvar_num(cvar_c4_default);
+			g_iC4Time[id] = cvar;
 		}
 		g_iItemBought = false;
 	}
@@ -112,11 +124,11 @@ public ttt_item_selected(id, item, name[], price)
 	new cvar = get_pcvar_num(cvar_c4_elapsed);
 	if(g_iItem_C4 == item)
 	{
-		if(get_roundtime() > float(cvar))
+		if(ttt_get_roundtime() > float(cvar))
 		{
 			engclient_cmd(id, "drop", "weapon_c4");
 			ham_give_weapon(id, "weapon_c4");
-			cs_set_user_submodel(id, 0);
+			set_attrib(id);
 			cs_set_user_plant(id, 1);
 			client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM2", name, id, "TTT_ITEM_C41");
 
@@ -133,7 +145,7 @@ public Event_C4_Att()
 {
 	new id = get_loguser_index();
 	set_attrib(id);
-	set_task(0.8, "set_attrib", id);
+	set_task(0.4, "set_attrib", id);
 }
 
 public set_attrib(id)
@@ -141,24 +153,12 @@ public set_attrib(id)
 	if(is_user_alive(id))
 		cs_set_user_submodel(id, 0);
 
-	new playerstate = ttt_get_special_state(id);
-	new num, i;
-	static players[32];
-	get_players(players, num);
-	for(--num; num >= 0; num--)
-	{
-		i = players[num];
-
-		if(playerstate == TRAITOR && playerstate == ttt_get_special_state(i))
-			set_attrib_special(i, 2, TRAITOR, DEAD);
-		else if(playerstate == DETECTIVE && playerstate == ttt_get_special_state(i))
-			set_attrib_special(i, 2, DETECTIVE, INNOCENT, DEAD);
-	}
+	set_attrib_all(id, 0);
 }
 
 public Forward_CmdStart_pre(id, handle)
 {
-	if(!g_iItemBought || ttt_get_special_state(id) != TRAITOR || !is_holding_c4(id))
+	if(!g_iItemBought || ttt_get_playerstate(id) != PC_TRAITOR || !is_holding_c4(id))
 		return;
 
 	static button;
@@ -177,8 +177,8 @@ public Forward_EmitSound_pre(ent, channel, const sound[])
 	if(!g_iItemBought)
 		return FMRES_HANDLED;
 
-	for(new i = 0; i <= charsmax(g_c4_sounds); i++)
-		if(equali(sound, g_c4_sounds[i]))
+	for(new i = 0; i < sizeof(g_szC4Sounds); i++)
+		if(equali(sound, g_szC4Sounds[i]))
 			return FMRES_SUPERCEDE;
 
 	return FMRES_HANDLED;
@@ -198,7 +198,8 @@ public bomb_planted(id)
 
 	set_task(0.5, "set_attrib", id);
 	set_task(0.1, "set_c4_info", id);
-	ttt_set_stats(id, STATS_BOMBP, ttt_get_player_stat(id, STATS_BOMBP)+1);
+	new ret;
+	ExecuteForward(g_pBombStatusForward, ret, id, BS_PLANTED);
 
 	new Float:fOrigin[3];
 	entity_get_vector(id, EV_VEC_origin, fOrigin);
@@ -222,7 +223,7 @@ public bomb_planted(id)
 	new c4 = -1, Float:fNewOrigin[3], Float:fAngles[3];
 	while((c4 = find_ent_by_model(c4, "grenade", "models/w_c4.mdl")))
 	{
-		if(entity_get_int(c4, EV_INT_movetype) == MOVETYPE_FLY 
+		if(!is_valid_ent(c4) || entity_get_int(c4, EV_INT_movetype) == MOVETYPE_FLY 
 		|| (entity_get_int(c4, EV_INT_flags) & FL_ONGROUND))
 			continue;
 
@@ -252,7 +253,7 @@ public set_c4_info(id)
 	formatex(out, charsmax(out), "%L", id, "TTT_ITEM_ID0");
 	while((c4 = find_ent_by_model(c4, "grenade", "models/w_c4.mdl")))
 	{
-		if(!entity_get_int(c4, EV_INT_iuser1))
+		if(is_valid_ent(c4) && !entity_get_int(c4, EV_INT_iuser1))
 		{
 			if(!g_iC4Time[id])
 				g_iC4Time[id] = get_pcvar_num(cvar_c4_default);
@@ -272,7 +273,7 @@ public set_c4_info(id)
 	new sub_c4 = -1;
 	while((sub_c4 = find_ent_by_class(sub_c4, TTT_C4_SUB)))
 	{
-		if(!entity_get_int(sub_c4, EV_INT_iuser1))
+		if(is_valid_ent(sub_c4) && !entity_get_int(sub_c4, EV_INT_iuser1))
 		{
 			g_iC4Info[c4id][C4SUB] = sub_c4;
 			entity_set_int(sub_c4, EV_INT_iuser1, id);
@@ -286,18 +287,18 @@ public C4Timer(id)
 	static number[32];
 	read_argv(1, number, charsmax(number));
 
-	new min = get_pcvar_num(cvar_c4_mintime), max = get_pcvar_num(cvar_c4_maxtime);
+	new time_min = get_pcvar_num(cvar_c4_mintime), time_max = get_pcvar_num(cvar_c4_maxtime);
 	if(is_str_num(number))
 	{
-		new time = str_to_num(number);
-		if(min <= time <= max)
+		new time_cur = str_to_num(number);
+		if(time_min <= time_cur <= time_max)
 		{
-			g_iC4Time[id] = time;
-			client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C42", time);
+			g_iC4Time[id] = time_cur;
+			client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C42", time_cur);
 		}
-		else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C41", min, max);
+		else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C41", time_min, time_max);
 	}
-	else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C41", min, max);
+	else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C41", time_min, time_max);
 
 	return PLUGIN_HANDLED;
 }
@@ -312,19 +313,19 @@ public C4_Think(ent)
 	set_c4_counter(id, g_iC4Info[c4id][C4TIME], c4id);
 	g_iC4Info[c4id][C4TIME]--;
 
-	if(g_iC4Info[c4id][C4TIME] <= 0 || !is_valid_ent(g_iC4Info[c4id][C4ENT]))
+	if(!is_valid_ent(g_iC4Info[c4id][C4ENT]))
 	{
-		if(g_iC4Info[c4id][C4TIME] <= 0)
-			ttt_set_playerdata(id, PD_C4EXPLODED, true);
+		ttt_set_playerdata(id, PD_C4EXPLODED, true);
 
 		entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1000.0);
-		c4_remove_ent(ent);
-		ttt_set_stats(id, STATS_BOMBE, ttt_get_player_stat(id, STATS_BOMBE)+1);
+		// c4_clear_one(c4id);
+		new ret;
+		ExecuteForward(g_pBombStatusForward, ret, id, BS_BOMBED);
 	}
 	else entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1.0);
 
 	// DNA
-	static data[SetupData];
+	static data[SETUP_DATA];
 	ttt_item_setup_get(g_iSetupItem[id], data);
 	if(data[SETUP_ITEMTIME] > 0)
 	{
@@ -335,12 +336,12 @@ public C4_Think(ent)
 
 public client_PostThink(id)
 {
-	if(!g_iItemBought || !is_user_alive(id) || ttt_get_special_state(id) != TRAITOR || g_fWaitTime[id] + 0.1 > get_gametime())
+	if(!g_iItemBought || !is_user_alive(id) || g_fWaitTime[id] + 0.1 > get_gametime() || ttt_get_playerstate(id) != PC_TRAITOR)
 		return;
 
 	g_fWaitTime[id] = get_gametime();
-	static i, Float:origin[3];
-	for(i = 0; i < MAX_C4; i++)
+	static Float:origin[3];
+	for(new i = 0; i < MAX_C4; i++)
 	{
 		if(g_iC4Info[i][C4STORED] && is_valid_ent(g_iC4Info[i][C4ENT]))
 		{
@@ -362,7 +363,7 @@ public set_c4_counter(id, time, move)
 		for(--num; num >= 0; num--)
 		{
 			i = players[num];
-			if(ttt_get_special_state(i) == TRAITOR || ttt_get_special_state(i) == DEAD)
+			if(ttt_get_playerstate(i) == PC_TRAITOR || ttt_get_playerstate(i) == PC_DEAD)
 			{
 				set_hudmessage(255, 50, 0, 0.02, 0.2+(0.03*move), 0, 6.0, 1.1, 0.0, 0.0, -1);
 				ShowSyncHudMsg(i, g_iC4Sync[move], "[%s C4 EXPLODES IN = %d]", name, time);
@@ -373,41 +374,51 @@ public set_c4_counter(id, time, move)
 
 stock c4_store(c4)
 {
-	new i;
-	for(i = 0; i < MAX_C4; i++)
+	for(new i = 0; i < MAX_C4; i++)
 	{
 		if(!g_iC4Info[i][C4STORED])
 		{
 			g_iC4Info[i][C4STORED] = 1;
 			g_iC4Info[i][C4ENT] = c4;
-			break;
+			return i;
 		}
 	}
-	return i;
+
+	return -1;
 }
 
 stock c4_get(find, what)
 {
-	new i;
-	for(i = 0; i < MAX_C4; i++)
+	for(new i = 0; i < MAX_C4; i++)
+	{
 		if(g_iC4Info[i][find] == what)
-			break;
-	return i;
+			return i;
+	}
+
+	return -1;
 }
 
-stock c4_clear()
+stock c4_clear_all()
 {
-	new i, z;
-	for(i = 0; i < MAX_C4; i++)
+	for(new i = 0; i < MAX_C4; i++)
 	{
-		for(z = 0; z < C4INFO; z++)
+		c4_clear_one(i);
+	}
+}
+
+stock c4_clear_one(index)
+{
+	new cvar = get_pcvar_num(cvar_c4_default);
+	for(new i = 0; i < C4INFO; i++)
+	{
+		if(i == C4ENT || i == C4SUB)
 		{
-			if(z == C4ENT || z == C4SUB)
-				c4_remove_ent(g_iC4Info[i][z]);
-			if(z == C4TIME)
-				g_iC4Info[i][z] = get_pcvar_num(cvar_c4_default);
-			else g_iC4Info[i][z] = 0;
+			c4_remove_ent(g_iC4Info[index][i]);
+			g_iC4Info[index][i] = 0;
 		}
+		if(i == C4TIME)
+			g_iC4Info[index][i] = cvar;
+		else g_iC4Info[index][i] = 0;
 	}
 }
 
@@ -428,7 +439,7 @@ stock get_loguser_index()
 
 stock is_holding_c4(id)
 {
-	if(is_user_alive(id) && get_user_weapon(id) == CSW_C4 && !ttt_is_dnas_active(id))
+	if(is_user_alive(id) && get_user_weapon(id) == CSW_C4 && !is_holding_dna_scanner(id))
 		return 1;
 
 	return 0;
