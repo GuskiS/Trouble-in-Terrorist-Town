@@ -33,7 +33,7 @@ public plugin_init()
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID8");
 	g_iItem_DeathStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_ds), PC_TRAITOR);
-	ttt_item_exception(g_iItem_DeathStation);
+	ttt_add_exception(g_iItem_DeathStation);
 }
 
 public ttt_gamemode(gamemode)

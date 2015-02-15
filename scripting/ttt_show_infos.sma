@@ -106,7 +106,7 @@ public ttt_show_me(id)
 		len += formatex(msg[len], SIZE - len, "</br><center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
 
 		new num, player, count, alive_state;
-		static players[32];
+		static players[32], name[32];
 		get_players(players, num);
 		for(--num; num >= 0; num--)
 		{
@@ -115,7 +115,8 @@ public ttt_show_me(id)
 			{
 				count++;
 				alive_state = ttt_get_alivestate(player);
-				len += formatex(msg[len], SIZE - len, "<b style='color:%s'>[%L] %n</b></br>", g_szColors[alive_state], id, special_names[alive_state], player);
+				get_user_name(player, name, charsmax(name));
+				len += formatex(msg[len], SIZE - len, "<b style='color:%s'>[%L] %s</b></br>", g_szColors[alive_state], id, special_names[alive_state], name);
 			}
 		}
 
@@ -226,7 +227,7 @@ public show_motd_winner(id)
 
 	// len += formatex(wholemsg[len], SIZE - len, "%L</br>", LANG_SERVER, "TTT_WINNER_LINE7");
 	new num, player, count, alive_state;
-	static players[32];
+	static players[32], name[32];
 	get_players(players, num);
 	for(--num; num >= 0; num--)
 	{
@@ -235,7 +236,8 @@ public show_motd_winner(id)
 		{
 			count++;
 			alive_state = ttt_get_alivestate(player);
-			len += formatex(wholemsg[len], SIZE - len, "%L <b style='color:%s'>[%L] %n</b></br>", LANG_SERVER, "TTT_WINNER_LINE7", g_szColors[alive_state], LANG_SERVER, special_names[alive_state], player);
+			get_user_name(player, name, charsmax(name));
+			len += formatex(wholemsg[len], SIZE - len, "%L <b style='color:%s'>[%L] %s</b></br>", LANG_SERVER, "TTT_WINNER_LINE7", g_szColors[alive_state], LANG_SERVER, special_names[alive_state], name);
 		}
 	}
 

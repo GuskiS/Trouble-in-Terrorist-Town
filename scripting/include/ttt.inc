@@ -209,12 +209,13 @@ native ttt_get_warnings(id, array[]);
 native ttt_set_warnings(id, array[]);
 
 /**
- * Sets item as exception in karma reduction.
+ * Sets/finds item as exception in karma reduction.
  *
  * @param item				Item id.
  * @return					true/false.
  */
-native ttt_item_exception(item);
+native ttt_add_exception(item);
+native ttt_find_exception(item);
 
 /**
  * Called when player bought item.
@@ -262,7 +263,8 @@ forward ttt_spawnbody(owner, ent);
  *
  * @param id				Player id.
  * @param status			BOMB_STATUS enum.
+ * @param ent				Bomb entity.
  */
-forward ttt_bomb_status(id, status);
+forward ttt_bomb_status(id, status, ent);
 
 #include <ttt_stocks>

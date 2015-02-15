@@ -5,7 +5,7 @@
 new g_pSocket;
 
 #define SCRIPT_NAME "/ttt_version_check.php"
-#define REMOTE_HOST "heal.lv"
+#define REMOTE_HOST "cs.hackers.lv"
 
 public plugin_init()
 {

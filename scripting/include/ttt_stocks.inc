@@ -57,6 +57,15 @@ stock ttt_get_gamemode()
 stock ttt_get_playerstate(id)
 	return ttt_get_playerdata(id, PD_PLAYERSTATE);
 
+stock ttt_is_exception(victim)
+{
+	new item = ttt_get_playerdata(victim, PD_KILLEDBYITEM);
+	if(item > -1)
+		return ttt_find_exception(item);
+
+	return 0;
+}
+
 stock ttt_get_alivestate(id)
 {
 	if(!is_user_alive(id))

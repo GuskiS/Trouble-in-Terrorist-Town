@@ -76,7 +76,7 @@ public ttt_winner(winner)
 		log_all_damage(players[num]);
 }
 
-public ttt_bomb_status(id, status)
+public ttt_bomb_status(id, status, ent)
 {
 	static const c4_status[][] =
 	{

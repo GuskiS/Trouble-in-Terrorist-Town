@@ -83,7 +83,7 @@ public client_disconnect(id)
 public client_infochanged(id)
 {
 	if(!is_user_connected(id))
-		return PLUGIN_CONTINUE;
+		return;
 
 	static newname[40], oldname[32];
 	get_user_name(id, oldname, charsmax(oldname));
@@ -96,8 +96,6 @@ public client_infochanged(id)
 		escape_mysql(g_szPlayerName[id], charsmax(g_szPlayerName[]));
 		MySQL_Load(id);
 	}
-
-	return PLUGIN_CONTINUE;
 }
 
 public MySQL_Init()
@@ -415,7 +413,7 @@ public ttt_gamemode(gamemode)
 	}
 }
 
-public ttt_bomb_status(id, status)
+public ttt_bomb_status(id, status, ent)
 {
 	switch(status)
 	{

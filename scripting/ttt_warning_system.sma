@@ -60,8 +60,7 @@ public Ham_Spawn_pre(id)
 
 public Ham_Killed_post(victim, killer, shouldgib)
 {
-	if(!is_user_alive(killer) || killer == victim || (get_pdata_int(victim, m_bitsDamageType, 5) & DMG_BLAST)
-		|| ttt_return_check(victim) || ttt_get_playerdata(victim, PD_KILLEDBYITEM) > -1)
+	if(!is_user_connected(killer) || killer == victim || ttt_return_check(victim) || ttt_is_exception(victim))
 		return;
 
 	new state_killer = ttt_get_playerstate(killer), state_victim = ttt_get_playerdata(victim, PD_KILLEDSTATE);

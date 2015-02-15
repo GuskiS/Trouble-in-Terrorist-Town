@@ -34,7 +34,7 @@ public plugin_init()
 {
 	register_plugin("[TTT] Defusing system", TTT_VERSION, TTT_AUTHOR);
 	RegisterHam(Ham_Use, "grenade", "Ham_Use_pre", 0);
-	g_pBombStatusForward = CreateMultiForward("ttt_bomb_status", ET_IGNORE, FP_CELL, FP_CELL);
+	g_pBombStatusForward = CreateMultiForward("ttt_bomb_status", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 }
 
 public bomb_planted(id)
@@ -80,8 +80,11 @@ public Ham_Use_pre(ent, id, idactivator, type, Float:value)
 	static Float:defuse_delay[33];
 	if(defuse_delay[idactivator] < get_gametime())
 	{
-		defuse_delay[idactivator] = get_gametime() + 1.0;
-		ttt_wires_show(idactivator, ent);
+		if(ttt_get_playerstate(id) != PC_TRAITOR)
+		{
+			defuse_delay[idactivator] = get_gametime() + 1.0;
+			ttt_wires_show(idactivator, ent);
+		}
 	}
 	return HAM_SUPERCEDE;
 }
@@ -203,24 +206,27 @@ public random_right(id, size, rights)
 
 public check_defusion(id, item, c4)
 {
-	new ret;
-	if(g_iPlayerWires[id][1][item])
+	if(is_valid_ent(c4))
 	{
-		message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("BarTime"), _, id);
-		write_short(1);
-		message_end();
+		new ret;
+		if(g_iPlayerWires[id][1][item])
+		{
+			message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("BarTime"), _, id);
+			write_short(1);
+			message_end();
 
-		if(is_valid_ent(c4))
-			remove_entity(c4);
+			// if(is_valid_ent(c4))
+				// remove_entity(c4);
 
-		ExecuteForward(g_pBombStatusForward, ret, id, BS_DEFUSED);
-		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE1");
-	}
-	else
-	{
-		cs_set_c4_explode_time(c4, get_gametime()+0.5);
-		ExecuteForward(g_pBombStatusForward, ret, id, BS_FAILED);
-		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE2");
+			ExecuteForward(g_pBombStatusForward, ret, id, BS_DEFUSED, c4);
+			client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE1");
+		}
+		else
+		{
+			cs_set_c4_explode_time(c4, get_gametime()+0.5);
+			ExecuteForward(g_pBombStatusForward, ret, id, BS_FAILED, c4);
+			client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DEFUSE2");
+		}
 	}
 
 	c4_clear(item);

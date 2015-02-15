@@ -41,7 +41,7 @@ public plugin_init()
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID3");
 	g_iItem_Jihad = ttt_buymenu_add(name, get_pcvar_num(cvar_price_jihad), PC_TRAITOR);
-	ttt_item_exception(g_iItem_Jihad);
+	ttt_add_exception(g_iItem_Jihad);
 }
 
 public ttt_gamemode(gamemode)

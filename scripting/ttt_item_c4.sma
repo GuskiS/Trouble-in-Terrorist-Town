@@ -67,7 +67,7 @@ public plugin_init()
 	register_think(TTT_C4_SUB, "C4_Think");
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 
-	g_pBombStatusForward = CreateMultiForward("ttt_bomb_status", ET_IGNORE, FP_CELL, FP_CELL);
+	g_pBombStatusForward = CreateMultiForward("ttt_bomb_status", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 
 	register_clcmd("Set_C4Timer", "C4Timer");
 	for(new i = 0; i <= charsmax(g_iC4Sync); i++)
@@ -76,7 +76,7 @@ public plugin_init()
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID0");
 	g_iItem_C4 = ttt_buymenu_add(name, get_pcvar_num(cvar_price_c4), PC_TRAITOR);
-	ttt_item_exception(g_iItem_C4);
+	ttt_add_exception(g_iItem_C4);
 }
 
 public client_putinserver(id)
@@ -141,6 +141,12 @@ public ttt_item_selected(id, item, name[], price)
 	return PLUGIN_CONTINUE;
 }
 
+public ttt_bomb_status(id, status, ent)
+{
+	if(status == BS_DEFUSED && is_valid_ent(ent))
+		c4_clear_one(c4_get(C4ENT, ent));
+}
+
 public Event_C4_Att()
 {
 	new id = get_loguser_index();
@@ -198,8 +204,6 @@ public bomb_planted(id)
 
 	set_task(0.5, "set_attrib", id);
 	set_task(0.1, "set_c4_info", id);
-	new ret;
-	ExecuteForward(g_pBombStatusForward, ret, id, BS_PLANTED);
 
 	new Float:fOrigin[3];
 	entity_get_vector(id, EV_VEC_origin, fOrigin);
@@ -248,13 +252,14 @@ public set_c4_info(id)
 	if(ttt_return_check(id))
 		return;
 
-	new c4 = -1, c4id;
+	new c4 = -1, c4id, ret;
 	static out[32];
 	formatex(out, charsmax(out), "%L", id, "TTT_ITEM_ID0");
 	while((c4 = find_ent_by_model(c4, "grenade", "models/w_c4.mdl")))
 	{
 		if(is_valid_ent(c4) && !entity_get_int(c4, EV_INT_iuser1))
 		{
+			ExecuteForward(g_pBombStatusForward, ret, id, BS_PLANTED, c4);
 			if(!g_iC4Time[id])
 				g_iC4Time[id] = get_pcvar_num(cvar_c4_default);
 
@@ -320,7 +325,7 @@ public C4_Think(ent)
 		entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1000.0);
 		// c4_clear_one(c4id);
 		new ret;
-		ExecuteForward(g_pBombStatusForward, ret, id, BS_BOMBED);
+		ExecuteForward(g_pBombStatusForward, ret, id, BS_BOMBED, g_iC4Info[c4id][C4ENT]);
 	}
 	else entity_set_float(ent, EV_FL_nextthink, get_gametime() + 1.0);
 

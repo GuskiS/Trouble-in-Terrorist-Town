@@ -115,7 +115,8 @@ public plugin_natives()
 	register_native("ttt_set_gamemode", "_set_gamemode");
 	register_native("ttt_get_specialcount", "_get_specialcount");
 	register_native("ttt_register_cvar", "_register_cvar");
-	register_native("ttt_item_exception", "_item_exception");
+	register_native("ttt_add_exception", "_add_exception");
+	register_native("ttt_find_exception", "_find_exception");
 }
 
 public plugin_cfg()
@@ -984,10 +985,10 @@ public _register_cvar(plugin, params)
 	return new_register_cvar(name, string, pluginname);
 }
 
-public _item_exception(plugin, params)
+public _add_exception(plugin, params)
 {
 	if(params != 1)
-		return ttt_log_api_error("ttt_item_exception needs 1 param(p1: %d)", plugin, params, get_param(1));
+		return ttt_log_api_error("ttt_add_exception needs 1 param(p1: %d)", plugin, params, get_param(1));
 
 	static const size = sizeof(g_iExceptionItems);
 	for(new i = 0; i < size; i++)
@@ -997,6 +998,22 @@ public _item_exception(plugin, params)
 			g_iExceptionItems[i] = get_param(1);
 			return 1;
 		}
+	}
+
+	return 0;
+}
+
+public _find_exception(plugin, params)
+{
+	if(params != 1)
+		return ttt_log_api_error("ttt_find_exception needs 1 param(p1: %d)", plugin, params, get_param(1));
+
+	new item = get_param(1);
+	static const size = sizeof(g_iExceptionItems);
+	for(new i = 0; i < size; i++)
+	{
+		if(g_iExceptionItems[i] == item)
+			return 1;
 	}
 
 	return 0;

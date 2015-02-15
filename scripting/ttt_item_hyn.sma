@@ -55,7 +55,7 @@ public ttt_item_backpack(id, item, name[])
 	if(g_iHasHYN[id] && g_iItem_Backpack[id] == item)
 	{
 		new hide = ttt_get_playerdata(id, PD_HIDENAME);
-		client_print_color(id, print_team_default, "%s %L", "%s %L", TTT_TAG, id, "TTT_HYN", hide ? "de" : "", name);
+		client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_HYN", hide ? "de" : "", name);
 		ttt_set_playerdata(id, PD_HIDENAME, !hide);
 		ttt_backpack_show(id);
 	}
