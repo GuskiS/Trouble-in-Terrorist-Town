@@ -78,6 +78,13 @@ native ttt_set_winner(team);
 native ttt_buymenu_add(const name[], const price, const team);
 
 /**
+ * Opens buy menu for player.
+ *
+ * @param owner				Players id.
+ */
+native ttt_buymenu_show(owner);
+
+/**
  * Adds item to Backpack and returns id.
  *
  * @param owner				Players id.
@@ -183,9 +190,10 @@ native ttt_logging(LOG_MESSAGES, msg[]);
  *
  * @param name[]				Cvar name.
  * @param string[]				Cvar value.
+ * @param description[]			Cvar description.
  * @return						true/false.
  */
-native ttt_register_cvar(name[], string[]);
+native ttt_register_cvar(name[], string[], description[]);
 
 /**
  * Sets/gets player stats.
@@ -216,6 +224,14 @@ native ttt_set_warnings(id, array[]);
  */
 native ttt_add_exception(item);
 native ttt_find_exception(item);
+
+/**
+ * Adds command to commands menu.
+ *
+ * @param name[]			Commands name.
+ * @return					Command id.
+ */
+native ttt_command_add(name[]);
 
 /**
  * Called when player bought item.
@@ -266,5 +282,19 @@ forward ttt_spawnbody(owner, ent);
  * @param ent				Bomb entity.
  */
 forward ttt_bomb_status(id, status, ent);
+
+/**
+ * Called when player choses command from menu.
+ *
+ * @param id				Players id.
+ * @param itemid			Menu id.
+ * @param name[]			Item name.
+ */
+forward ttt_command_selected(id, menuid, name[]);
+
+/**
+ * Called TTT config files has been executed.
+ */
+forward ttt_plugin_cfg();
 
 #include <ttt_stocks>

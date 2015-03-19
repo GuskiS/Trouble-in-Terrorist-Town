@@ -43,14 +43,17 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: Pocket revolver", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_weapon_clip		= my_register_cvar("ttt_revolver_clip",		"6");
-	cvar_weapon_ammo		= my_register_cvar("ttt_revolver_ammo",		"0");
-	cvar_weapon_speed		= my_register_cvar("ttt_revolver_speed",	"0.7");
-	cvar_weapon_damage		= my_register_cvar("ttt_revolver_damage",	"0.0");
-	cvar_weapon_reload		= my_register_cvar("ttt_revolver_reload",	"0.0");
-	cvar_weapon_recoil		= my_register_cvar("ttt_revolver_recoil",	"0.0");
-	cvar_weapon_price		= my_register_cvar("ttt_price_revolver",	"2");
+	cvar_weapon_clip	= my_register_cvar("ttt_revolver_clip",		"6",	"Pocket Revolver clip ammo. (Default: 6)");
+	cvar_weapon_ammo	= my_register_cvar("ttt_revolver_ammo",		"0",	"Pocket Revolver backpack ammo. (Default: 0)");
+	cvar_weapon_speed	= my_register_cvar("ttt_revolver_speed",	"1.3",	"Pocket Revolver attack speed delay. (Default: 1.3)");
+	cvar_weapon_damage	= my_register_cvar("ttt_revolver_damage",	"0.0",	"Pocket Revolver damage multiplier. (Default: 0.0)");
+	cvar_weapon_reload	= my_register_cvar("ttt_revolver_reload",	"0.0",	"Pocket Revolver reload speed. (Default: 0.0)");
+	cvar_weapon_recoil	= my_register_cvar("ttt_revolver_recoil",	"0.0",	"Pocket Revolver recoil. (Default: 0.0)");
+	cvar_weapon_price	= my_register_cvar("ttt_price_revolver",	"3",	"Pocket Revolver price. (Default: 3)");
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID13");
 	g_iItemID = ttt_buymenu_add(name, get_pcvar_num(cvar_weapon_price), PC_DETECTIVE);

@@ -20,11 +20,15 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: Defuser&Armor", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_price_defuser		= my_register_cvar("ttt_price_defuser",	"1");
-	cvar_price_armor		= my_register_cvar("ttt_price_armor",	"1");
+	cvar_price_defuser	= my_register_cvar("ttt_price_defuser",	"1", "Defuser price. (Default: 1)");
+	cvar_price_armor	= my_register_cvar("ttt_price_armor",	"1", "Armor price. (Default: 1)");
+
 	RegisterHam(Ham_TraceAttack, "player", "Ham_TraceAttack_pre", 0);
 	RegisterHam(Ham_TraceAttack, "player", "Ham_TraceAttack_post", 1);
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID2");
 	g_iItem_Armor = ttt_buymenu_add(name, get_pcvar_num(cvar_price_armor), PC_SPECIAL);

@@ -41,13 +41,17 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: DNA Scanner", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_weapon_price = my_register_cvar("ttt_price_dna", "1");
-	g_pMsg_StatusIcon = get_user_msgid("StatusIcon");
+	cvar_weapon_price = my_register_cvar("ttt_price_dna", "1", "DNA Scanner price. (Default: 1)");
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 
+	g_pMsg_StatusIcon = get_user_msgid("StatusIcon");
+}
+
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID5");
 	g_iItemID = ttt_buymenu_add(name, get_pcvar_num(cvar_weapon_price), PC_DETECTIVE);
-	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 }
 
 public Ham_Killed_post(victim, killer)

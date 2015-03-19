@@ -39,14 +39,17 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: AWP", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_weapon_clip		= my_register_cvar("ttt_awp_clip",		"1");
-	cvar_weapon_ammo		= my_register_cvar("ttt_awp_ammo",		"15");
-	cvar_weapon_speed		= my_register_cvar("ttt_awp_speed",		"0.0");
-	cvar_weapon_damage		= my_register_cvar("ttt_awp_damage",	"1.0");
-	cvar_weapon_reload		= my_register_cvar("ttt_awp_reload",	"0.0");
-	cvar_weapon_recoil		= my_register_cvar("ttt_awp_recoil",	"0.0");
-	cvar_weapon_price		= my_register_cvar("ttt_price_awp",		"1");
+	cvar_weapon_clip	= my_register_cvar("ttt_awp_clip",		"1",	"AWP clip ammo. (Default: 1)");
+	cvar_weapon_ammo	= my_register_cvar("ttt_awp_ammo",		"15",	"AWP backpack ammo. (Default: 15)");
+	cvar_weapon_speed	= my_register_cvar("ttt_awp_speed",		"0.0",	"AWP attack speed delay. (Default: 0.0)");
+	cvar_weapon_damage	= my_register_cvar("ttt_awp_damage",	"1.0",	"AWP damage multiplier. (Default: 1.0)");
+	cvar_weapon_reload	= my_register_cvar("ttt_awp_reload",	"0.0",	"AWP reloadspeed delay. (Default: 0.0)");
+	cvar_weapon_recoil	= my_register_cvar("ttt_awp_recoil",	"0.0",	"AWP recoil multiplier. (Default: 0.0)");
+	cvar_weapon_price	= my_register_cvar("ttt_price_awp",		"1",	"AWP price. (Default: 1)");
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID15");
 	g_iItemID = ttt_buymenu_add(name, get_pcvar_num(cvar_weapon_price), PC_TRAITOR);

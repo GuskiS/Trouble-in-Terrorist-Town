@@ -41,7 +41,7 @@ public plugin_init()
 {
 	register_plugin("[TTT] Round winner", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_karma_win = my_register_cvar("ttt_karma_win", "20");
+	cvar_karma_win = my_register_cvar("ttt_karma_win", "20", "Karma for winning and keeping alive. (Default: 20)");
 	register_message(get_user_msgid("TextMsg"), "Message_Winner");
 
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);

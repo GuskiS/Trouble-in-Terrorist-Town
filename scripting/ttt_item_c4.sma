@@ -53,11 +53,11 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: C4", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_c4_default			= my_register_cvar("ttt_c4_default",		"45");		// Default C4 timer (default: 45)
-	cvar_c4_maxtime			= my_register_cvar("ttt_c4_maxtime",		"180");		// Max C4 timer (default: 180)
-	cvar_c4_mintime			= my_register_cvar("ttt_c4_mintime",		"30");		// Min C4 timer (default: 30)
-	cvar_c4_elapsed			= my_register_cvar("ttt_c4_elapsed", 		"45");		// Elapsed roundtime before allow to plant (default: 45)
-	cvar_price_c4			= my_register_cvar("ttt_price_c4", 			"3");		// Price(default: 3)
+	cvar_c4_default	= my_register_cvar("ttt_c4_default",	"45",	"Default timer for C4. (Default: 45)");
+	cvar_c4_maxtime	= my_register_cvar("ttt_c4_maxtime",	"180",	"Max timer for C4. (Default: 180)");
+	cvar_c4_mintime	= my_register_cvar("ttt_c4_mintime",	"30",	"Min timer for C4. (Default: 30)");
+	cvar_c4_elapsed	= my_register_cvar("ttt_c4_elapsed", 	"45",	"Min round time elapsed to plant C4. (Default: 45)");
+	cvar_price_c4	= my_register_cvar("ttt_price_c4", 		"3",	"C4 price. (Default: 3)");
 
 	register_logevent("Event_C4_Att", 3, "2=Dropped_The_Bomb");
 	register_logevent("Event_C4_Att", 3, "2=Got_The_Bomb");
@@ -72,7 +72,10 @@ public plugin_init()
 	register_clcmd("Set_C4Timer", "C4Timer");
 	for(new i = 0; i <= charsmax(g_iC4Sync); i++)
 		g_iC4Sync[i] = CreateHudSyncObj();
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID0");
 	g_iItem_C4 = ttt_buymenu_add(name, get_pcvar_num(cvar_price_c4), PC_TRAITOR);

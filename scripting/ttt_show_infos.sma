@@ -3,7 +3,7 @@
 #include <cstrike>
 #include <ttt>
 
-new g_iCached[2], g_iKilledWho[33][33];
+new g_iCached[2], g_iKilledWho[33][33], g_pCommandMenuID1, g_pCommandMenuID2, g_iPlayerStates[33][2];
 new const g_szIconNames[][] = 
 {
 	"suicide", "p228", "", "scout", "hegrenade", "xm1014", "c4", "mac10", "aug", "hegrenade", "elite", "fiveseven",
@@ -17,8 +17,8 @@ new const g_szColors[][] =
 	"#fc0204", // red
 	"#0402fc", // blue
 	"#048204", // green
-	"#F57011", // orange
-	"#E211F5"  // purple
+	"#E211F5", // purple
+	"#F57011"  // orange
 };
 
 public plugin_precache()
@@ -36,15 +36,25 @@ public plugin_init()
 {
 	register_plugin("[TTT] Show infos", TTT_VERSION, TTT_AUTHOR);
 
-	register_clcmd("say /tttme", "ttt_show_me");
-	register_clcmd("say_team /tttme", "ttt_show_me");
+	// register_clcmd("say /tttme", "ttt_show_me");
+	// register_clcmd("say_team /tttme", "ttt_show_me");
+	g_pCommandMenuID1 = ttt_command_add("/me");
+	g_pCommandMenuID2 = ttt_command_add("Last states");
 
-	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
+}
+
+public ttt_command_selected(id, menuid, name[])
+{
+	if(g_pCommandMenuID1 == menuid)
+		ttt_show_me(id);
+	else if(g_pCommandMenuID2 == menuid)
+		show_last_states(id);
 }
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
+	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING || gamemode == GAME_STARTED)
 	{
 		new num, id;
 		static players[32];
@@ -53,11 +63,29 @@ public ttt_gamemode(gamemode)
 		{
 			id = players[num];
 			reset_player(id);
+			if(gamemode == GAME_STARTED)
+				swap_player_states(id);
 		}
+
+		if(gamemode == GAME_STARTED)
+			g_iCached[1] = false;
 	}
 }
 
-stock reset_player(id)
+public client_putinserver(id)
+{
+	g_iPlayerStates[id][0] = -1;
+	g_iPlayerStates[id][1] = -1;
+	reset_player(id, id);
+}
+
+stock swap_player_states(id)
+{
+	g_iPlayerStates[id][0] = g_iPlayerStates[id][1];
+	g_iPlayerStates[id][1] = ttt_get_playerstate(id);
+}
+
+stock reset_player(id, other = 0)
 {
 	new num, player;
 	static players[32];
@@ -66,12 +94,17 @@ stock reset_player(id)
 	{
 		player = players[num];
 		g_iKilledWho[id][player] = false;
+		if(other)
+		{
+			g_iKilledWho[player][id] = false;
+		}
 	}
 }
 
 public ttt_winner(team)
 {
 	g_iCached[0] = false;
+	g_iCached[1] = false;
 	new num, id;
 	static players[32];
 	get_players(players, num);
@@ -128,9 +161,12 @@ public ttt_show_me(id)
 	else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ALIVE");
 }
 
-public Ham_Killed_pre(victim, killer, shouldgib)
+public Ham_Killed_post(victim, killer, shouldgib)
 {
-	if(!is_user_connected(victim) || !is_user_connected(killer) || ttt_get_gamemode() == GAME_ENDED)
+	if(!is_user_connected(killer))
+		killer = ttt_find_valid_killer(victim, killer);
+
+	if(!is_user_connected(killer) || ttt_get_gamemode() == GAME_ENDED)
 		return HAM_IGNORED;
 
 	g_iKilledWho[killer][victim] = ttt_get_alivestate(victim);
@@ -147,7 +183,7 @@ public show_motd_winner(id)
 	new zum, len;
 	if(!g_iCached[0])
 	{
-		new i, highest, num, killedstate;
+		new i, highest, num, killedstate, currentstate;
 		new name[32], Traitors[256], Detectives[256], suicide[128], kills[128], c4[70], out[64], players[32];
 
 		get_players(players, num);
@@ -156,12 +192,13 @@ public show_motd_winner(id)
 			i = players[num];
 
 			killedstate = ttt_get_alivestate(i);
+			currentstate = ttt_get_playerstate(i);
 			get_user_name(i, name, charsmax(name));
 
-			if(ttt_get_playerstate(i) == PC_TRAITOR || killedstate == PC_TRAITOR)
+			if(currentstate == PC_TRAITOR || killedstate == PC_TRAITOR)
 				format(Traitors, charsmax(Traitors), "%s, %s", name, Traitors);
 
-			if(ttt_get_playerstate(i) == PC_DETECTIVE || killedstate == PC_DETECTIVE)
+			if(currentstate == PC_DETECTIVE || killedstate == PC_DETECTIVE)
 				format(Detectives, charsmax(Detectives), "%s, %s", name, Detectives);
 
 			if(ttt_get_playerdata(i, PD_KILLEDBY) == 3005)
@@ -172,8 +209,8 @@ public show_motd_winner(id)
 
 			if(ttt_get_playerdata(i, PD_KILLCOUNT) > highest)
 			{
-				if(ttt_get_playerstate(i) != PC_DEAD)
-					zum = ttt_get_playerstate(i);
+				if(currentstate != PC_DEAD)
+					zum = currentstate;
 				else zum = killedstate;
 
 				highest = ttt_get_playerdata(i, PD_KILLCOUNT);
@@ -276,5 +313,48 @@ public show_motd_info(id, target)
 	show_motd(id, msg, motdname);
 
 	get_user_name(id, name[1], charsmax(name[]));
-	ttt_log_to_file(LOG_MISC, "%s inspected dead of %s", name[1], name[0]);
+	ttt_log_to_file(LOG_MISC, "%s inspected deadbody of %s", name[1], name[0]);
+}
+
+public show_last_states(id)
+{
+	const SIZE = 1536;
+	static msg[SIZE+1], show;
+
+	if(!g_iCached[1])
+	{
+		new len;
+		len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top;}</style></head><body>");
+
+		new num, player, player_state, count[PLAYER_CLASS];
+		static players[32], name[32];
+		get_players(players, num);
+		for(--num; num >= 0; num--)
+		{
+			player = players[num];
+			player_state = g_iPlayerStates[player][0];
+			if(player_state > -1)
+			{
+				count[player_state]++;
+				get_user_name(player, name, charsmax(name));
+				len += formatex(msg[len], SIZE - len, "<b style='color:%s'>[%L] %s</b></br>", g_szColors[player_state], id, special_names[player_state], name);
+			}
+		}
+
+		len += formatex(msg[len], SIZE - len, "</br>");
+		for(new i = 0; i < PLAYER_CLASS; i++)
+		{
+			if(count[i])
+			{
+				show = true;
+				len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L: %d</b></br>", g_szColors[i], id, special_names[i], count[i]);
+			}
+		}
+
+		len += formatex(msg[len], SIZE - len, "</body></html>");
+		g_iCached[1] = true;
+	}
+
+	if(show)
+		show_motd(id, msg, "");
 }

@@ -25,11 +25,14 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: Death Station", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_price_ds = my_register_cvar("ttt_price_ds", "2");
+	cvar_price_ds = my_register_cvar("ttt_price_ds", "2", "DeathStation price. (Default: 2)");
 
 	register_think(TTT_DEATHSTATION, "DeathStation_Think");
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID8");
 	g_iItem_DeathStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_ds), PC_TRAITOR);

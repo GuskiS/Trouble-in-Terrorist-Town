@@ -11,7 +11,7 @@ public plugin_init()
 {
 	register_plugin("[TTT] AntiRetry system", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_antiretry 	= my_register_cvar("ttt_antiretry", "2"); // 1=mysql, 2=sqlite
+	cvar_antiretry 	= my_register_cvar("ttt_antiretry", "2", "AntiRetry 0/1/2 off/MySQL/Sqlite. (Default: 2)");
 }
 
 public plugin_cfg()
@@ -25,7 +25,8 @@ public delayed_plugin_cfg()
 public plugin_end()
 {
 	table_clear();
-	SQL_FreeHandle(g_pSqlTuple);
+	if(g_pSqlTuple)
+		SQL_FreeHandle(g_pSqlTuple);
 }
 
 public client_putinserver(id)
@@ -71,7 +72,7 @@ public MySQL_Init()
 	else if(g_iDataBaseType == 2)
 	{
 		SQL_SetAffinity("sqlite");
-		g_pSqlTuple = SQL_MakeDbTuple("localhost", "root", "", "ttt_db");
+		g_pSqlTuple = SQL_MakeDbTuple("localhost", "root", "", "ttt_antiretry");
 
 	}
 	else set_fail_state("[TTT] CVAR set wrongly, plugin turning off!");
@@ -194,22 +195,19 @@ public MySQL_LoadData(failstate, Handle:query, error[], code, data[], datasize)
 
 public MySQL_FreeHandle(failstate, Handle:query, error[], errcode, data[], datasize)
 {
-	// if(failstate < 0)
-	// {
-	// 	log_amx("Failstate: %d, Code %d", failstate, errcode);
-	// 	log_amx("Error: %s", error);
-	// 	log_amx("Data: %s", data);
-	// }
 	SQL_FreeHandle(query);
 	return PLUGIN_HANDLED;
 }
 
 stock table_clear()
 {
-	if(g_iDataBaseType == 1)
-		SQL_ThreadQuery(g_pSqlTuple, "MySQL_FreeHandle", "TRUNCATE TABLE ttt_antiretry;");
-	else if(g_iDataBaseType == 2)
-		SQL_ThreadQuery(g_pSqlTuple, "MySQL_FreeHandle", "DELETE FROM ttt_antiretry;");
+	if(g_pSqlTuple)
+	{
+		if(g_iDataBaseType == 1)
+			SQL_ThreadQuery(g_pSqlTuple, "MySQL_FreeHandle", "TRUNCATE TABLE ttt_antiretry;");
+		else if(g_iDataBaseType == 2)
+			SQL_ThreadQuery(g_pSqlTuple, "MySQL_FreeHandle", "DELETE FROM ttt_antiretry;");
+	}
 }
 
 stock table_insert(id)

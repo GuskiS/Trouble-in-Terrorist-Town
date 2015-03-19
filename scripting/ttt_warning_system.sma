@@ -6,9 +6,9 @@
 
 #define m_bitsDamageType 	76
 
-new g_iWarnings[33][TTT_WARNINGS];
+new g_iWarnings[33][TTT_WARNINGS], g_pCommandMenuID;
 new cvar_warnings_innocent, cvar_warnings_special, cvar_warnings_punishment, cvar_warnings_bantime,
-	cvar_warnings_continued, cvar_warnings_players, cvar_warnings_blind_time;
+	cvar_warnings_continued, cvar_warnings_players, cvar_warnings_blind_time, cvar_warnings_minkarma;
 
 new g_pMsgScreeFade;
 
@@ -16,16 +16,18 @@ public plugin_init()
 {
 	register_plugin("[TTT] Warning system", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_warnings_special		= my_register_cvar("ttt_warnings_special",		"3");
-	cvar_warnings_innocent		= my_register_cvar("ttt_warnings_innocent",		"5");
-	cvar_warnings_continued		= my_register_cvar("ttt_warnings_continued",	"3");
-	cvar_warnings_punishment	= my_register_cvar("ttt_warnings_punishment",	"cdf");
-	cvar_warnings_bantime		= my_register_cvar("ttt_warnings_bantime",		"60");
-	cvar_warnings_players		= my_register_cvar("ttt_warnings_players",		"5");
-	cvar_warnings_blind_time	= my_register_cvar("ttt_warnings_blind_time",	"60");
+	cvar_warnings_special		= my_register_cvar("ttt_warnings_special",		"2",	"Max warnings for killing Traitor or Detective wrongly, for example, Detective kills Detective. (Default: 2)");
+	cvar_warnings_innocent		= my_register_cvar("ttt_warnings_innocent",		"3",	"Max warnings for killing Innocent wrongly. (Default: 3)");
+	cvar_warnings_continued		= my_register_cvar("ttt_warnings_continued",	"3",	"Max continued warnings for killing wrongly, for example, kill wrongly Innocent, Detective, Innocent. (Default: 3)");
+	cvar_warnings_punishment	= my_register_cvar("ttt_warnings_punishment",	"cdf",	"Punishment types: a=kick, b=ban, c=remove karma, d=hp to 1, e=blind, f=bad aim, g=ban on low karma. (Default: cdf)");
+	cvar_warnings_bantime		= my_register_cvar("ttt_warnings_bantime",		"60",	"Ban time if ttt_ar_warnings_punishment has B. (Default: 60)");
+	cvar_warnings_players		= my_register_cvar("ttt_warnings_players",		"5",	"Minimum players to start warn them. (Default: 5)");
+	cvar_warnings_blind_time	= my_register_cvar("ttt_warnings_blind_time",	"60",	"Blind time in seconds. (Default: 60)");
+	cvar_warnings_minkarma		= my_register_cvar("ttt_warnings_minkarma",		"300",	"Ban if karma <= X. (Default: 300)");
 
-	register_clcmd("say /tttwarns", "check_warnings");
-	register_clcmd("say_team /tttwarns", "check_warnings");
+	// register_clcmd("say /tttwarns", "check_warnings");
+	// register_clcmd("say_team /tttwarns", "check_warnings");
+	g_pCommandMenuID = ttt_command_add("Warnings");
 
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 	RegisterHamPlayer(Ham_Spawn, "Ham_Spawn_pre", 0);
@@ -39,6 +41,12 @@ public plugin_natives()
 	register_library("ttt");
 	register_native("ttt_get_warnings", "_get_warnings");
 	register_native("ttt_set_warnings", "_set_warnings");
+}
+
+public ttt_command_selected(id, menuid, name[])
+{
+	if(g_pCommandMenuID == menuid)
+		check_warnings(id);
 }
 
 public client_putinserver(id)
@@ -60,6 +68,9 @@ public Ham_Spawn_pre(id)
 
 public Ham_Killed_post(victim, killer, shouldgib)
 {
+	if(!is_user_connected(killer))
+		killer = ttt_find_valid_killer(victim, killer);
+
 	if(!is_user_connected(killer) || killer == victim || ttt_return_check(victim) || ttt_is_exception(victim))
 		return;
 
@@ -143,7 +154,8 @@ public punish_player(id)
 		(1<<2),	// c = remove karma,
 		(1<<3),	// d = hp to 1,
 		(1<<4),	// e = blind,
-		(1<<5)	// f = bad aim
+		(1<<5),	// f = bad aim
+		(1<<6)	// g = ban low karma
 	};
 
 	new flags = read_flags(cvar);
@@ -181,6 +193,7 @@ stock pick_punishment(killer, punishment)
 		case 3: if(is_user_alive(killer)) set_user_health(killer, 1);
 		case 4: set_user_blind(killer);
 		case 5: set_user_badaim(killer);
+		case 6: ban_user_lowkarma(killer);
 	}
 }
 
@@ -230,6 +243,16 @@ stock reset_client(id)
 
 	if(task_exists(id))
 		remove_task(id);
+}
+
+stock ban_user_lowkarma(id)
+{
+	new karma = ttt_get_playerdata(id, PD_KARMATEMP);
+	if(karma <= get_pcvar_num(cvar_warnings_minkarma))
+	{
+		server_cmd("amx_banip %d #%d MIN_KARMA:%d", get_pcvar_num(cvar_warnings_bantime), get_user_userid(id), karma);
+		g_iWarnings[id][WARN_BANNED] = true;
+	}
 }
 
 //API

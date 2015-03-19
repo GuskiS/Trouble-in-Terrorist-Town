@@ -35,6 +35,15 @@ stock const special_names[][] =
 	"TTT_SPECIAL"
 };
 
+stock const player_loyalty[][] =
+{
+	"TTT_LOYALTY_NONE",
+	"TTT_LOYALTY_PROVABLE",
+	"TTT_LOYALTY_SUSPICIOUS",
+	"TTT_LOYALTY_AVOIDABLE",
+	"TTT_LOYALTY_TRAITOROUS"
+};
+
 stock is_dead_body(classname[])
 {
 	if(equal(classname, TTT_DEADBODY))
@@ -72,6 +81,23 @@ stock ttt_get_alivestate(id)
 		return ttt_get_playerdata(id, PD_KILLEDSTATE);
 
 	return ttt_get_playerstate(id);
+}
+
+stock ttt_get_user_name(id, name[], size)
+{
+	new other_id = ttt_get_playerdata(id, PD_OTHERNAME);
+	if(!is_user_connected(other_id) || is_user_alive(other_id))
+	{
+		other_id = id;
+		ttt_set_playerdata(id, PD_OTHERNAME, 0);
+	}
+
+	get_user_name(other_id, name, size);
+}
+
+stock ttt_state_special(player_state)
+{
+	return player_state == PC_TRAITOR || player_state == PC_DETECTIVE;
 }
 
 stock escape_mysql(string[], len)
@@ -230,6 +256,12 @@ stock ttt_make_deathmsg(killer, victim, headshot, const weapon[], flags)
 	}	
 }
 
+stock ttt_find_valid_killer(victim, killer)
+{
+	new new_killer = ttt_get_playerdata(victim, PD_KILLEDBY);
+	return new_killer ? new_killer : killer;
+}
+
 stock ttt_get_kill_message(victim, killer, message[], len, type=0)
 {
 	if(!is_user_alive(victim))
@@ -338,9 +370,6 @@ stock get_dat_deadbody(ent, Float:startOrigin[3], Float:endOrigin[3])
 		return false;
 
 	new ptr = create_tr2();
-	xs_vec_sub(endOrigin, startOrigin, endOrigin);
-	xs_vec_mul_scalar(endOrigin, 10.0, endOrigin);
-	xs_vec_add(startOrigin, endOrigin, endOrigin);
 	engfunc(EngFunc_TraceModel, startOrigin, endOrigin, HULL_POINT, ent, ptr);
 	if(get_tr2(ptr, TR_pHit) == ent)
 	{
@@ -405,9 +434,9 @@ stock move_grenade()
 	return 1;
 }
 
-stock my_register_cvar(name[], string[], flags = 0, Float:fvalue = 0.0)
+stock my_register_cvar(name[], string[], description[], flags = 0, Float:fvalue = 0.0)
 {
-	ttt_register_cvar(name, string);
+	ttt_register_cvar(name, string, description);
 	return register_cvar(name, string, flags, fvalue);
 }
 
@@ -558,4 +587,16 @@ stock is_holding_dna_scanner(id)
 	}
 
 	return 0;
+}
+
+stock FixedUnsigned16(Float:value, scale)
+{
+	new output;
+	output = floatround(value * scale);
+	if(output < 0)
+		output = 0;
+	if(output > 0xFFFF)
+		output = 0xFFFF;
+
+	return output;
 }

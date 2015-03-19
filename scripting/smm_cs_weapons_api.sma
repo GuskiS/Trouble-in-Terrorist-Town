@@ -130,7 +130,7 @@ public Touch_WeaponBox(ent, id)
 
 public Forward_SetModel_pre(ent, model[])
 {
-	//log_amx("SETMODEL %d - %s", ent, model);
+	// log_amx("SETMODEL %d - %s", ent, model);
 	if(!is_valid_ent(ent))
 		return FMRES_IGNORED;
 

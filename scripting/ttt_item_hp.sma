@@ -30,13 +30,16 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: HP Station", TTT_VERSION, TTT_AUTHOR);
 	
-	cvar_price_hp = my_register_cvar("ttt_price_hp", "2");
+	cvar_price_hp = my_register_cvar("ttt_price_hp", "2", "HealthStation price. (Default: 2)");
 	RegisterHamPlayer(Ham_ObjectCaps, "Ham_ObjectCaps_pre", 0);
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
 
 	register_think(TTT_HPSTATION, "HPStation_Think");
 	g_Msg_StatusIcon = get_user_msgid("StatusIcon");
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID4");
 	g_iItem_HPStation = ttt_buymenu_add(name, get_pcvar_num(cvar_price_hp), PC_DETECTIVE);
@@ -142,6 +145,7 @@ public Ham_ObjectCaps_pre(id)
 			static name[32];
 			get_user_name(id, name, charsmax(name));
 			ttt_log_to_file(LOG_ITEM, "%s started healing, HP: %d", name, health);
+
 			g_iHPStation[id][ENT] = ent;
 			set_task(0.1, "hp_station_use", id, _, _, "b");
 			return HAM_HANDLED;

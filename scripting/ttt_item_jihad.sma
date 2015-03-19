@@ -31,13 +31,16 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: Jihad", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_jihad_damage		= my_register_cvar("ttt_jihad_damage",		"300.0");
-	cvar_jihad_radius		= my_register_cvar("ttt_jihad_radius",		"420.0");
-	cvar_jihad_timer		= my_register_cvar("ttt_jihad_timer",		"3");
-	cvar_price_jihad		= my_register_cvar("ttt_price_jihad",		"2");
+	cvar_jihad_damage	= my_register_cvar("ttt_jihad_damage",	"300.0",	"Jihad bombs damage. (Default: 300.0)");
+	cvar_jihad_radius	= my_register_cvar("ttt_jihad_radius",	"420.0",	"Jihad bombs radius. (Default: 420.0)");
+	cvar_jihad_timer	= my_register_cvar("ttt_jihad_timer",	"3",		"Jihad bombs timer. (Default: 3)");
+	cvar_price_jihad	= my_register_cvar("ttt_price_jihad",	"2",		"Jihad bombs price. (Default: 2)");
 
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID3");
 	g_iItem_Jihad = ttt_buymenu_add(name, get_pcvar_num(cvar_price_jihad), PC_TRAITOR);
@@ -117,9 +120,6 @@ public ttt_item_backpack(id, item)
 
 public Ham_Killed_pre(victim, killer, shouldgib)
 {
-	if(!is_user_connected(killer))
-		return HAM_IGNORED;
-
 	if(g_iHasJihad[victim] && g_iTimerJihad[victim] == 1 && victim == killer)
 	{
 		g_iHasJihad[victim] = false;
@@ -131,8 +131,6 @@ public Ham_Killed_pre(victim, killer, shouldgib)
 		emit_sound(victim, CHAN_AUTO, g_szSounds[0], 1.0, ATTN_NORM, SND_STOP, PITCH_NORM);
 		remove_task(victim);
 	}
-
-	return HAM_HANDLED;
 }
 
 public jihad_bomber(id)

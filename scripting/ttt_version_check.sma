@@ -35,9 +35,9 @@ public read_web()
 {
 	new text[256], int_v[5], str_v[7];
 	socket_recv(g_pSocket, text, charsmax(text));
-	strtok(text[167], int_v, charsmax(int_v), str_v, charsmax(str_v));
+	strtok(text[165], int_v, charsmax(int_v), str_v, charsmax(str_v));
 	new version = str_to_num(int_v);
-	if(version < TTT_VERSION_INT)
+	if(version > TTT_VERSION_INT)
 	{
 		log_amx("[TTT] You are using %s version, but newest is %s!", TTT_VERSION, str_v);
 		log_amx("[TTT] Download @ https://forums.alliedmods.net/showthread.php?t=238780");

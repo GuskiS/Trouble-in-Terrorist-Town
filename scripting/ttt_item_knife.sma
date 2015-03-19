@@ -57,15 +57,15 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: Knife", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_dmgmult			= my_register_cvar("ttt_knife_multi",				"11.0");
-	cvar_pattack_rate		= my_register_cvar("ttt_knife_primary_rate",		"0.6");
-	cvar_sattack_rate		= my_register_cvar("ttt_knife_secondary_rate", 		"1.3");
-	cvar_pattack_recoil		= my_register_cvar("ttt_knife_primary_recoil", 		"-3.6");
-	cvar_sattack_recoil		= my_register_cvar("ttt_knife_secondary_recoil",	"-5.0");
-	cvar_price_knife		= my_register_cvar("ttt_price_knife",				"3");
-	cvar_knife_glow			= my_register_cvar("ttt_knife_glow",				"1");
-	cvar_knife_velocity		= my_register_cvar("ttt_knife_velocity",			"1500");
-	cvar_knife_bounce		= my_register_cvar("ttt_knife_bounce",				"0");
+	cvar_dmgmult		= my_register_cvar("ttt_knife_multi",				"11.0",	"Knife damage multiplier. (Default: 11.0)");
+	cvar_pattack_rate	= my_register_cvar("ttt_knife_primary_rate",		"0.6",	"Knife primary attack speed multiplier. (Default: 0.6)");
+	cvar_sattack_rate	= my_register_cvar("ttt_knife_secondary_rate", 		"1.3",	"Knife secondary attack speed multiplier. (Default: 1.3)");
+	cvar_pattack_recoil	= my_register_cvar("ttt_knife_primary_recoil", 		"-3.6",	"Knife primary recoil multiplier. (Default: -3.6)");
+	cvar_sattack_recoil	= my_register_cvar("ttt_knife_secondary_recoil",	"-5.0", "Knife secondary recoil multiplier. (Default: -5.0)");
+	cvar_knife_glow		= my_register_cvar("ttt_knife_glow",				"1",	"Knife glow when thrown. (Default: 1)");
+	cvar_knife_velocity	= my_register_cvar("ttt_knife_velocity",			"1500",	"Knife throwing speed. (Default: 1500)");
+	cvar_knife_bounce	= my_register_cvar("ttt_knife_bounce",				"0",	"Knife should bounce from walls? (Default: 0)");
+	cvar_price_knife	= my_register_cvar("ttt_price_knife",				"3",	"Knife price. (Default: 3)");
 
 	register_think("grenade", "Think_Grenade");
 	register_touch("grenade", "*", "Touch_Grenade");
@@ -78,12 +78,15 @@ public plugin_init()
 	RegisterHam(Ham_Item_Deploy, "weapon_knife", "Ham_Item_Deploy_post", 1);
 	RegisterHam(Ham_Item_Deploy, "weapon_smokegrenade", "Ham_Item_Deploy_Grenade_post", 1);
 
+	register_clcmd("drop", "clcmd_drop");
+	register_clcmd("weapon_knife", "clcmd_knife");
+}
+
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID11");
 	g_iItem_Knife = ttt_buymenu_add(name, get_pcvar_num(cvar_price_knife), PC_TRAITOR);
-
-	register_clcmd("drop", "clcmd_drop");
-	register_clcmd("weapon_knife", "clcmd_knife");
 }
 
 public client_disconnect(id)
@@ -159,7 +162,6 @@ public clcmd_throw(id, vel, value)
 	ExecuteHamB(Ham_Weapon_PrimaryAttack, ent);
 	set_pdata_float(ent, m_flTimeWeaponIdle, 0.0, XO_WEAPON);
 	ExecuteHam(Ham_Weapon_WeaponIdle, ent);
-	strip_knife(id, K_NONE);
 
 	static name[32];
 	get_user_name(id, name, charsmax(name));
@@ -198,8 +200,9 @@ public grenade_throw(id, ent, nade)
 		if(get_pcvar_num(cvar_knife_glow))
 			UTIL_SetRendering(ent, kRenderFxGlowShell, Float:{255.0, 0.0, 0.0}, _, 50.0);
 
-		if(entity_get_float(ent, EV_FL_dmgtime) != 0.0)
-			entity_set_model(ent, g_szModels[2]);
+		entity_set_model(ent, g_szModels[2]);
+		strip_knife(id, K_NONE);
+		ham_strip_weapon(id, "weapon_smokegrenade");
 	}
 }
 
@@ -237,7 +240,8 @@ public Think_Grenade(ent)
 
 public Touch_Grenade(nade, id)
 {
-	if(!is_valid_ent(nade) || GetGrenadeType(nade) != CSW_SMOKEGRENADE || !entity_get_int(nade, EV_INT_iuser4) || ttt_get_gamemode() != GAME_STARTED)
+	if(!is_valid_ent(nade) || GetGrenadeType(nade) != CSW_SMOKEGRENADE
+		|| !entity_get_int(nade, EV_INT_iuser4)|| ttt_get_gamemode() != GAME_STARTED)
 		return PLUGIN_CONTINUE;
 
 	if(is_user_alive(id))

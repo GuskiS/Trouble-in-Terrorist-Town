@@ -6,12 +6,12 @@
 #include <timer_controller>
 #include <ttt>
 
-#define TASK_SURVIVAL 1111
-#define TASK_ORPHEU 2222
-#define m_bitsDamageType 76
-#define m_flPainShock		108
-#define OFFSET_LINUX_WEAPONS 4
-#define OFFSET_LINUX_PLAYERS 5
+#define TASK_SURVIVAL			1111
+#define TASK_ORPHEU				2222
+#define m_bitsDamageType		76
+#define m_flPainShock			108
+#define OFFSET_LINUX_WEAPONS	4
+#define OFFSET_LINUX_PLAYERS	5
 
 enum
 {
@@ -45,7 +45,7 @@ new cvar_traitors, cvar_detectives, cvar_karma_damage,
 	cvar_credits_tra_start, cvar_credits_tra_count, cvar_credits_tra_detkill, cvar_credits_tra_countkill,
 	cvar_credits_det_start, cvar_credits_tra_repeat, cvar_damage_modifier,
 	cvar_credits_det_bonussurv, cvar_credits_det_survtime, cvar_show_deathmessage, cvar_detective_glow;
-new g_Msg_TeamInfo, g_iGameModeForward;
+new g_pMsgTeamInfo, g_pMsgScreenFade, g_iGameModeForward, g_iPluginCfgForward;
 new Float:g_fFreezeTime, Float:g_fRoundTime, Float:g_fRoundStart;
 new g_iMaxDetectives, g_iMaxTraitors, g_iMaxPlayers;
 new g_iExceptionItems[10] = {-2, -2, ...};
@@ -56,25 +56,26 @@ public plugin_init()
 	register_plugin("[TTT] Core", TTT_VERSION, TTT_AUTHOR);
 	register_cvar("ttt_server_version", TTT_VERSION, FCVAR_SERVER|FCVAR_EXTDLL|FCVAR_SPONLY);
 
-	cvar_traitors					= mynew_register_cvar("ttt_traitors",					"4");
-	cvar_detectives					= mynew_register_cvar("ttt_detectives",					"8");
-	cvar_preparation_time			= mynew_register_cvar("ttt_preparation_time",			"10");
-	cvar_credits_tra_start			= mynew_register_cvar("ttt_credits_tra_start",			"2");
-	cvar_credits_tra_count			= mynew_register_cvar("ttt_credits_tra_count",			"0.25");
-	cvar_credits_tra_repeat			= mynew_register_cvar("ttt_credits_tra_repeat",			"1");
-	cvar_credits_tra_detkill		= mynew_register_cvar("ttt_credits_tra_detkill",		"1");
-	cvar_credits_tra_countkill		= mynew_register_cvar("ttt_credits_tra_countkill",		"1");
-	cvar_credits_det_start			= mynew_register_cvar("ttt_credits_det_start",			"1");
-	cvar_credits_det_bonussurv		= mynew_register_cvar("ttt_credits_det_bonussurv",		"1");
-	cvar_credits_det_survtime		= mynew_register_cvar("ttt_credits_det_survtime",		"45.0");
-	cvar_karma_damage				= mynew_register_cvar("ttt_karma_damage",				"0.25");
-	cvar_karma_multi				= mynew_register_cvar("ttt_karma_multi",				"50");
-	cvar_karma_start				= mynew_register_cvar("ttt_karma_start",				"500");
-	cvar_show_deathmessage			= mynew_register_cvar("ttt_show_deathmessage",			"abeg");
-	cvar_damage_modifier			= mynew_register_cvar("ttt_damage_modifier",			"1.0");
-	cvar_detective_glow				= mynew_register_cvar("ttt_detective_glow",				"1");
+	cvar_traitors				= mynew_register_cvar("ttt_traitors",				"4",	"One Traitor on X players. (Default: 4)");
+	cvar_detectives				= mynew_register_cvar("ttt_detectives",				"6",	"One Detective on X players. (Default: 6)");
+	cvar_preparation_time		= mynew_register_cvar("ttt_preparation_time",		"10",	"Preparation time before game start. (Default: 10)");
+	cvar_credits_tra_start		= mynew_register_cvar("ttt_credits_tra_start",		"2",	"Number of credits Traitor has when starting game. (Default: 2)");
+	cvar_credits_tra_count		= mynew_register_cvar("ttt_credits_tra_count",		"0.25",	"Percentage of players to kill to get extra credits. (Default: 0.25)");
+	cvar_credits_tra_repeat		= mynew_register_cvar("ttt_credits_tra_repeat",		"1",	"Repeat percentage kills till all are killed. (Default: 1)");
+	cvar_credits_tra_detkill	= mynew_register_cvar("ttt_credits_tra_detkill",	"1",	"Number of credits for killing a Detective. (Default: 1)");
+	cvar_credits_tra_countkill	= mynew_register_cvar("ttt_credits_tra_countkill",	"1",	"Number of credits to give for percentage kills. (Default: 1)");
+	cvar_credits_det_start		= mynew_register_cvar("ttt_credits_det_start",		"1",	"Number of credits Detective has when starting game. (Default: 1)");
+	cvar_credits_det_bonussurv	= mynew_register_cvar("ttt_credits_det_bonussurv",	"1",	"Number of credits to give for surviving time. (Default: 1)");
+	cvar_credits_det_survtime	= mynew_register_cvar("ttt_credits_det_survtime",	"45.0",	"Every X seconds give credits. (Default: 45.0)");
+	cvar_karma_damage			= mynew_register_cvar("ttt_karma_damage",			"0.25",	"Karma modifier dealing damage. (Default: 0.25)");
+	cvar_karma_multi			= mynew_register_cvar("ttt_karma_multi",			"50",	"Karma modifier for killing. (Default: 50)");
+	cvar_karma_start			= mynew_register_cvar("ttt_karma_start",			"500",	"Starting karma. (Default: 500)");
+	cvar_show_deathmessage		= mynew_register_cvar("ttt_show_deathmessage",		"abeg",	"Show deathmessages to: a=NONE, b=TRAITOR, c=DETECTIVE, d=INNOCENT, e=DEAD, f=SPECIAL, g=victim, h=killer. (Default: abeg)");
+	cvar_damage_modifier		= mynew_register_cvar("ttt_damage_modifier",		"1.0",	"Modifies karma based damage. (Default: 1.0)");
+	cvar_detective_glow			= mynew_register_cvar("ttt_detective_glow",			"1",	"Should detective also be glowing? (Default: 1)");
 
-	g_Msg_TeamInfo		=	get_user_msgid("TeamInfo");
+	g_pMsgScreenFade	= get_user_msgid("ScreenFade");
+	g_pMsgTeamInfo		= get_user_msgid("TeamInfo");
 
 	register_event("TextMsg", "Event_RoundRestart", "a", "2&#Game_C", "2&#Game_w");
 	register_event("HLTV", "Event_HLTV", "a", "1=0", "2=0");
@@ -91,12 +92,15 @@ public plugin_init()
 	RegisterHamPlayer(Ham_TraceAttack, "Ham_TraceAttack_pre", 0);
 
 	g_iGameModeForward = CreateMultiForward("ttt_gamemode", ET_IGNORE, FP_CELL);
+	g_iPluginCfgForward = CreateMultiForward("ttt_plugin_cfg", ET_IGNORE);
 
 	g_iMaxPlayers = get_maxplayers();
 	#if AMXX_VERSION_NUM < 183
 	register_dictionary("ttt_c.txt");
+	register_dictionary("ttt_addons_c.txt");
 	#else
 	register_dictionary("ttt.txt");
+	register_dictionary("ttt_addons.txt");
 	#endif
 }
 
@@ -106,17 +110,17 @@ public plugin_end()
 public plugin_natives()
 {
 	register_library("ttt");
-	register_native("ttt_get_roundtime", "_get_roundtime");
-	register_native("ttt_get_playerdata", "_get_playerdata");
-	register_native("ttt_set_playerdata", "_set_playerdata");
-	register_native("ttt_get_globalinfo", "_get_globalinfo");
-	register_native("ttt_set_globalinfo", "_set_globalinfo");
-	register_native("ttt_set_playerstate", "_set_playerstate");
-	register_native("ttt_set_gamemode", "_set_gamemode");
-	register_native("ttt_get_specialcount", "_get_specialcount");
-	register_native("ttt_register_cvar", "_register_cvar");
-	register_native("ttt_add_exception", "_add_exception");
-	register_native("ttt_find_exception", "_find_exception");
+	register_native("ttt_get_roundtime",	"_get_roundtime");
+	register_native("ttt_get_playerdata",	"_get_playerdata");
+	register_native("ttt_set_playerdata",	"_set_playerdata");
+	register_native("ttt_get_globalinfo",	"_get_globalinfo");
+	register_native("ttt_set_globalinfo",	"_set_globalinfo");
+	register_native("ttt_set_playerstate",	"_set_playerstate");
+	register_native("ttt_set_gamemode",		"_set_gamemode");
+	register_native("ttt_get_specialcount",	"_get_specialcount");
+	register_native("ttt_register_cvar",	"_register_cvar");
+	register_native("ttt_add_exception",	"_add_exception");
+	register_native("ttt_find_exception",	"_find_exception");
 }
 
 public plugin_cfg()
@@ -124,6 +128,9 @@ public plugin_cfg()
 	auto_exec_config(TTT_CONFIGFILE);
 	g_fRoundTime = get_pcvar_float(get_cvar_pointer("mp_roundtime"));
 	TrieDestroy(g_tCvarsToFile);
+
+	new ret;
+	ExecuteForward(g_iPluginCfgForward, ret);
 }
 
 public client_disconnect(id)
@@ -250,6 +257,7 @@ public do_the_magic()
 
 		if(get_special_state(id) != PC_DETECTIVE && get_special_state(id) != PC_TRAITOR)
 		{
+			screen_fade(id, PC_INNOCENT);
 			set_special_state(id, PC_INNOCENT);
 			cs_set_player_team(id, CS_TEAM_CT, false);
 		}
@@ -311,8 +319,6 @@ public Ham_Killed_pre(victim, killer, shouldgib)
 	g_iPlayerData[victim][PD_KILLEDTIME] = floatround(floatmul(g_fRoundTime, 60.0) - get_round_time());
 	g_iPlayerData[victim][PD_KILLEDDEATHS]++;
 
-	//karma_modifier(killer, victim, g_iPlayerData[victim][PD_KARMATEMP], 1, 0);
-
 	set_special_state(victim, PC_DEAD);
 	return HAM_HANDLED;
 }
@@ -369,6 +375,11 @@ public Ham_Killed_post(victim, killer, shouldgib)
 {
 	if(my_return_check(victim))
 		return;
+
+	if(!is_user_connected(killer))
+	{
+		killer = find_valid_killer(victim, killer);
+	}
 
 	new bonus;
 	static players[32], name[32];
@@ -435,6 +446,12 @@ public Ham_Killed_post(victim, killer, shouldgib)
 	set_task(0.1, "Show_All");
 }
 
+public find_valid_killer(victim, killer)
+{
+	new new_killer = get_player_data(victim, PD_KILLEDBY);
+	return new_killer ? new_killer : killer;
+}
+
 public killed_with_item(victim)
 {
 	new item = get_player_data(victim, PD_KILLEDBYITEM);
@@ -475,7 +492,7 @@ public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, bits)
 	if(!my_return_check(attacker))
 	{
 		new Float:modifier = g_iPlayerData[attacker][PD_KARMA]/1000.0;
-		if(modifier > 0.05 && damage > 0.0)
+		if(modifier > 0.05 && damage > 0.1)
 		{
 			damage *= (modifier*get_pcvar_float(cvar_damage_modifier));
 			if(cs_get_user_team(attacker) != cs_get_user_team(victim))
@@ -497,7 +514,7 @@ public Ham_TakeDamage_post(victim, inflictor, attacker, Float:damage, bits)
 {
 	if(!my_return_check(attacker))
 	{
-		if(damage > 0.0)
+		if(damage > 0.1)
 		{
 			if(victim != attacker)
 				karma_modifier(attacker, victim, KARMA_DMG);
@@ -522,11 +539,13 @@ public Forward_AddToFullPack_post(es_handle, e, ent, host, hostflags, id, pSet)
 		if(!cvar)
 			cvar = get_pcvar_num(cvar_detective_glow);
 
-		static entTeam, hostTeam;
-		entTeam = get_special_alive(ent);
-		hostTeam = get_special_alive(host);
+		new entTeam = get_special_alive(ent);
 		if(entTeam != PC_INNOCENT)
 		{
+			new hostTeam = get_special_alive(host);
+			new fakeTeam = get_player_data(ent, PD_FAKESTATE);
+			if(fakeTeam && hostTeam != entTeam)
+				entTeam = fakeTeam;
 			if(hostTeam == PC_TRAITOR || ((hostTeam == PC_DETECTIVE || hostTeam == PC_INNOCENT) && entTeam != PC_TRAITOR && cvar))
 			{
 				set_es(es_handle, ES_RenderFx, kRenderFxGlowShell);
@@ -561,6 +580,7 @@ public pick_specials()
 			g_iPlayerData[id][PD_CREDITS] = get_pcvar_num(cvar_credits_tra_start);
 			set_special_state(id, randomNum);
 
+			screen_fade(id, randomNum);
 			ttt_log_to_file(LOG_DEFAULT, "[%L] %s choosen (ID:%d)", id, special_names[randomNum], name, id);
 			cs_set_player_team(id, CS_TEAM_T, false);
 		}
@@ -571,12 +591,26 @@ public pick_specials()
 				g_iPlayerData[id][PD_CREDITS] = get_pcvar_num(cvar_credits_det_start);
 				set_special_state(id, randomNum);
 
+				screen_fade(id, randomNum);
 				ttt_log_to_file(LOG_DEFAULT, "[%L] %s choosen (ID:%d)", id, special_names[randomNum], name, id);
 				cs_set_player_team(id, CS_TEAM_CT, false);
 			}
 		}
 		case PC_NONE: return;
 	}
+}
+
+stock screen_fade(id, player_state)
+{
+	message_begin(MSG_ONE_UNRELIABLE, g_pMsgScreenFade, _, id);
+	write_short(FixedUnsigned16(1.0, 1<<12));
+	write_short(0);
+	write_short((SF_FADE_MODULATE)); //flags (SF_FADE_IN + SF_FADE_ONLYONE) (SF_FADEOUT)
+	write_byte(g_iTeamColors[player_state][0]);
+	write_byte(g_iTeamColors[player_state][1]);
+	write_byte(g_iTeamColors[player_state][2]);
+	write_byte(180);
+	message_end();
 }
 
 stock my_return_check(id)
@@ -807,7 +841,7 @@ stock set_fake_team(id, getstate)
 
 stock set_fake_message(id, i, msg[])
 {
-	message_begin(MSG_ONE_UNRELIABLE, g_Msg_TeamInfo, _, id);
+	message_begin(MSG_ONE_UNRELIABLE, g_pMsgTeamInfo, _, id);
 	write_byte(i);
 	write_string(msg);
 	message_end();
@@ -816,13 +850,13 @@ stock set_fake_message(id, i, msg[])
 stock Float:get_round_time()
 	return get_gametime() - g_fRoundStart - g_fFreezeTime;
 
-stock mynew_register_cvar(name[], string[], flags = 0, Float:fvalue = 0.0)
+stock mynew_register_cvar(name[], string[], description[], flags = 0, Float:fvalue = 0.0)
 {
-	new_register_cvar(name, string);
+	new_register_cvar(name, string, description);
 	return register_cvar(name, string, flags, fvalue);
 }
 
-stock new_register_cvar(name[], string[], plug[] = "ttt_core.amxx")
+stock new_register_cvar(name[], string[], description[], plug[] = "ttt_core.amxx")
 {
 	static path[96];
 	if(!path[0])
@@ -840,6 +874,18 @@ stock new_register_cvar(name[], string[], plug[] = "ttt_core.amxx")
 		file = fopen(path, "wt");
 		if(!file)
 			return 0;
+
+		fprintf(file, "// Server specific.^n");
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", "mp_tkpunish", "0",				plug, "Disables TeamKill punishments");
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", "mp_friendlyfire", "1",			plug, "Enables friendly fire to attack teamnates");
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", "mp_limitteams", "0",				plug, "Disables team limits");
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", "mp_autoteambalance", "0",			plug, "Disables team limits");
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", "mp_freezetime", "0",				plug, "Disables freeze time on round start");
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", "mp_playerid", "2",				plug, "Disables team info when aiming on player");
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", "sv_allktalk", "1",				plug, "Enables alltalk");
+		fprintf(file, "%-26s %-14s // %-32s // %s^n", "amx_statscfg", "off PlayerName",	plug, "Disables player name when aiming on player");
+		fprintf(file, "^n");
+		fprintf(file, "// Mod specific.^n");
 	}
 	else
 	{
@@ -874,7 +920,7 @@ stock new_register_cvar(name[], string[], plug[] = "ttt_core.amxx")
 
 	if(!TrieKeyExists(g_tCvarsToFile, name))
 	{
-		fprintf(file, "%-32s %-8s // ^"%s^"^n", name, string, plug);
+		fprintf(file, "%-32s %-8s // %-32s // %s^n", name, string, plug, description);
 		#if AMXX_VERSION_NUM >= 183
 			TrieSetCell(g_tCvarsToFile, name, 1, false);
 		#else
@@ -886,6 +932,7 @@ stock new_register_cvar(name[], string[], plug[] = "ttt_core.amxx")
 	fclose(file);
 	return 1;
 }
+
 // API
 public _set_playerstate(plugin, params)
 {
@@ -921,16 +968,7 @@ public _get_playerdata(plugin, params)
 	if(params != 2)
 		return ttt_log_api_error("ttt_get_playerdata needs 2 params(p1: %d, p2: %d)", plugin, params, get_param(1), get_param(2));
 
-	new id = get_param(1), data = get_param(2);
-	if(id >= 32 || data >= PLAYER_DATA)
-	{
-		static name[40];
-		get_plugin(plugin, name, charsmax(name));
-		if(data == PD_PLAYERSTATE)
-			log_amx("STATE Param1 %d, Param2 %d, plugin %s", id, data, name);
-		else log_amx("ELSE Param1 %d, Param2 %d, plugin %s", id, data, name);
-	}
-	return get_player_data(id, data);
+	return get_player_data(get_param(1), get_param(2));
 }
 
 public _set_playerdata(plugin, params)
@@ -940,14 +978,6 @@ public _set_playerdata(plugin, params)
 
 	new id = get_param(1);
 	new datatype = get_param(2);
-	if(id >= 32 || datatype >= PLAYER_DATA)
-	{
-		static name[40];
-		get_plugin(plugin, name, charsmax(name));
-		if(datatype == PD_PLAYERSTATE)
-			log_amx("STATE Param1 %d, Param2 %d, plugin %s", id, datatype, name);
-		else log_amx("ELSE Param1 %d, Param2 %d, plugin %s", id, datatype, name);
-	}
 	set_player_data(id, datatype, get_param(3));
 	if(datatype == PD_KARMATEMP)
 		karma_reset(id);
@@ -974,15 +1004,16 @@ public _set_globalinfo(plugin, params)
 
 public _register_cvar(plugin, params)
 {
-	if(params != 2)
-		return ttt_log_api_error("ttt_register_cvar needs 2 params", plugin, params);
+	if(params != 3)
+		return ttt_log_api_error("ttt_register_cvar needs 3 params", plugin, params);
 
-	static name[48], string[16], pluginname[48];
+	static name[48], string[16], pluginname[48], description[128];
 	get_string(1, name, charsmax(name));
 	get_string(2, string, charsmax(string));
+	get_string(3, description, charsmax(description));
 	get_plugin(plugin, pluginname, charsmax(pluginname));
 
-	return new_register_cvar(name, string, pluginname);
+	return new_register_cvar(name, string, description, pluginname);
 }
 
 public _add_exception(plugin, params)

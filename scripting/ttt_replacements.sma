@@ -10,6 +10,7 @@
 #define LINUX_WEAPON_OFF			4
 #define m_flNextPrimaryAttack		46
 #define m_flNextSecondaryAttack		47
+#define m_flNextHudTextArgs			198
 
 new g_szCrowbarModel[2][TTT_FILELENGHT];
 new g_szGrenadeModel[3][TTT_FILELENGHT];
@@ -105,7 +106,9 @@ public plugin_init()
 		set_msg_block(get_user_msgid(g_szBlockSet[i]), BLOCK_SET);
 
 	for(i = 0; i <= charsmax(g_szMessageBlock); i++)
-		register_message(get_user_msgid(g_szMessageBlock[i]), "Message_Block");
+		register_message(get_user_msgid(g_szMessageBlock[i]), "Block_Messages");
+
+	register_message(get_user_msgid("HudTextArgs"), "Block_HudTextArgs");
 
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
 	register_forward(FM_GetGameDescription, "Forward_GetGameDescription_pre", 0);
@@ -139,7 +142,7 @@ public grenade_throw(id, ent, nade)
 	}
 }
 
-public Message_Block(msgid, dest, id)
+public Block_Messages(msgid, dest, id)
 {
 	if(get_msg_args() > 1)
 	{
@@ -162,6 +165,12 @@ public Message_Block(msgid, dest, id)
 	}
 
 	return PLUGIN_CONTINUE;
+}
+
+public Block_HudTextArgs(msgid, dest, id)
+{
+	set_pdata_float(id, m_flNextHudTextArgs, 0.0);	
+	return PLUGIN_HANDLED;
 }
 
 public Forward_GetGameDescription_pre()
@@ -210,6 +219,7 @@ public Ham_Spawn_post(id)
 {
 	if(is_user_alive(id))
 	{
+		// CAUSES NAME CHANGE MESSAGE TO DISAPPEAR, WTF?
 		static model[20];
 		cs_get_user_model(id, model, charsmax(model));
 

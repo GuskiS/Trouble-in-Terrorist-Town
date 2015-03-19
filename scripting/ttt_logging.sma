@@ -19,9 +19,9 @@ public plugin_init()
 	RegisterHamPlayer(Ham_TakeDamage, "Ham_TakeDamage_post", 1);
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 
-	cvar_logging		= my_register_cvar("ttt_logging",		"1");
-	cvar_logging_error	= my_register_cvar("ttt_logging_error",	"1");// separate error logs
-	cvar_logging_type	= my_register_cvar("ttt_logging_type",	"abcdefg"); // a=default, b=error, c=gametype, d=item, e=kill, f=damage, g=misc
+	cvar_logging		= my_register_cvar("ttt_logging",		"1",		"Logging enabled? (Default: 1)");
+	cvar_logging_error	= my_register_cvar("ttt_logging_error",	"1",		"Logging should separate error file? (Default: 1)");
+	cvar_logging_type	= my_register_cvar("ttt_logging_type",	"abcdefg",	"Logging type - a=default, b=error, c=gametype, d=item, e=kill, f=damage, g=misc. (Default: abcdefg)");
 
 	new msg[32];
 	get_time("%Y%m%d", msg, charsmax(msg)); 
@@ -40,9 +40,13 @@ public plugin_natives()
 
 public plugin_end()
 {
-	new mapname[32];
-	get_pcvar_string(get_cvar_pointer("amx_nextmap"), mapname, charsmax(mapname));
-	_ttt_log_to_file(LOG_DEFAULT, "amx_nextmap is %s", mapname);
+	new cvar = get_cvar_pointer("amx_nextmap");
+	if(cvar)
+	{
+		new mapname[32];
+		get_pcvar_string(get_cvar_pointer("amx_nextmap"), mapname, charsmax(mapname));
+		_ttt_log_to_file(LOG_DEFAULT, "amx_nextmap is %s", mapname);
+	}
 }
 
 public client_putinserver(id)
@@ -102,6 +106,9 @@ public Ham_TakeDamage_post(victim, inflictor, attacker, Float:damage, bits)
 
 public Ham_Killed_post(victim, killer, shouldgib)
 {
+	if(!is_user_connected(killer))
+		killer = ttt_find_valid_killer(victim, killer);
+
 	static name[32], killmsg[64];
 	get_user_name(victim, name, charsmax(name));
 

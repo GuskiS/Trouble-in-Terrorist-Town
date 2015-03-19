@@ -50,20 +50,24 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: Newton Launcher", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_weapon_clip		= my_register_cvar("ttt_newton_clip",		"1");
-	cvar_weapon_ammo		= my_register_cvar("ttt_newton_ammo",		"10");
-	cvar_weapon_speed		= my_register_cvar("ttt_newton_speed",		"2.0");
-	cvar_weapon_damage		= my_register_cvar("ttt_newton_damage",		"0.0");
-	cvar_weapon_reload		= my_register_cvar("ttt_newton_reload",		"0.0");
-	cvar_weapon_recoil		= my_register_cvar("ttt_newton_recoil",		"0.0");
-	cvar_weapon_force		= my_register_cvar("ttt_newton_force",		"100.0");
-	cvar_weapon_price		= my_register_cvar("ttt_price_newton",		"1");
+	cvar_weapon_clip	= my_register_cvar("ttt_newton_clip",	"1",	"Newton Launcher clip ammo. (Default: 1)");
+	cvar_weapon_ammo	= my_register_cvar("ttt_newton_ammo",	"10",	"Newton Launcher backpack ammo. (Default: 10)");
+	cvar_weapon_speed	= my_register_cvar("ttt_newton_speed",	"2.0",	"Newton Launcher attack speed delay. (Default: 2.0)");
+	cvar_weapon_damage	= my_register_cvar("ttt_newton_damage",	"0.0",	"Newton Launcher damage multiplier. (Default: 0.0)");
+	cvar_weapon_reload	= my_register_cvar("ttt_newton_reload",	"2.0",	"Newton Launcher reload speed. (Default: 2.0)");
+	cvar_weapon_recoil	= my_register_cvar("ttt_newton_recoil",	"0.0",	"Newton Launcher recoil. (Default: 0.0)");
+	cvar_weapon_force	= my_register_cvar("ttt_newton_force",	"100.0","Newton Launcher force. (Default: 100.0)");
+	cvar_weapon_price	= my_register_cvar("ttt_price_newton",	"1",	"Newton Launcher price. (Default: 1)");
 
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID16");
 	g_iItemID = ttt_buymenu_add(name, get_pcvar_num(cvar_weapon_price), PC_TRAITOR);
+	ttt_add_exception(g_iItemID);
 }
 
 public ttt_item_selected(id, item, name[], price)
@@ -103,8 +107,11 @@ public ttt_item_selected(id, item, name[], price)
 
 public Ham_Killed_pre(victim, killer, shouldgib)
 {
-	if(!killer && (get_pdata_int(victim, m_bitsDamageType, 5) & DMG_FALL) && g_iWasPushed[victim])
+	if(!is_user_connected(killer) && g_iWasPushed[victim])
+	{
+		ttt_set_playerdata(victim, PD_KILLEDBYITEM, g_iItemID);	
 		SetHamParamEntity(2, g_iWasPushed[victim]);
+	}
 
 	g_iWasPushed[victim] = false;
 }

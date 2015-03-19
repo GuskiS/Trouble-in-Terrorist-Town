@@ -3,15 +3,19 @@
 #include <ttt>
 
 new g_iItem_Teleporter, cvar_price_tele, cvar_teleport_wait, g_iItemBought;
-new g_iHasTeleporter[33], g_iItem_Coordinates[33] = {-1, -1, ...}, g_iItem_Teleport[33] = {-1, -1, ...}, Float:g_fPlayerOrigin[33][3], Float:g_fHasUsed[33];
+new g_iHasTeleporter[33], g_iItem_Coordinates[33] = {-1, -1, ...}, g_iItem_Teleport[33] = {-1, -1, ...};
+new Float:g_fPlayerOrigin[33][3], Float:g_fHasUsed[33];
 
 public plugin_init()
 {
 	register_plugin("[TTT] Item: Teleport", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_price_tele		= my_register_cvar("ttt_price_tele", "1");
-	cvar_teleport_wait	= my_register_cvar("ttt_teleport_wait", "5.0");
+	cvar_teleport_wait	= my_register_cvar("ttt_teleport_wait", "5.0",	"Teleport waiting time before can be used again. (Default: 5.0)");
+	cvar_price_tele		= my_register_cvar("ttt_price_tele", "1",		"Teleport price. (Default: 1)");
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID12");
 	g_iItem_Teleporter = ttt_buymenu_add(name, get_pcvar_num(cvar_price_tele), PC_DETECTIVE);

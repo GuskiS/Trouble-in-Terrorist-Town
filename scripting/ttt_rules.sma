@@ -1,8 +1,10 @@
 #include <amxmodx>
+#include <amxmisc>
 #include <ttt>
 
-new g_iRules[33];
+new g_iRules[33], g_pCommandMenuID;
 new Array:g_aFilePath, Array:g_aFileName;
+
 public plugin_init()
 {
 	register_plugin("[TTT] Rules", TTT_VERSION, TTT_AUTHOR);
@@ -10,6 +12,9 @@ public plugin_init()
 	register_clcmd("say_team /rules", "ttt_rules_show");
 	register_clcmd("say /help", "ttt_rules_show");
 	register_clcmd("say_team /help", "ttt_rules_show");
+	register_concmd("ttt_rules", "cmd_force_rules", TTT_ADMINACCESS, "#nickname #rule_id");
+
+	g_pCommandMenuID = ttt_command_add("Rules menu");
 	g_aFilePath = ArrayCreate(64, 3);
 	g_aFileName = ArrayCreate(20, 3);
 
@@ -56,6 +61,12 @@ public client_putinserver(id)
 		set_task(10.0, "ttt_rules_show", id);
 }
 
+public ttt_command_selected(id, menuid, name[])
+{
+	if(g_pCommandMenuID == menuid)
+		ttt_rules_show(id);
+}
+
 public ttt_rules_show(id)
 {
 	new menu = menu_create("\rRules", "ttt_rules_handler");
@@ -96,12 +107,9 @@ public ttt_rules_handler(id, menu, item)
 	menu_destroy(menu);
 
 	new num = str_to_num(command);
-	static option[20], path[64];
 	if(num < 1000)
 	{
-		ArrayGetString(g_aFileName, num, option, charsmax(option));
-		ArrayGetString(g_aFilePath, num, path, charsmax(path));
-		show_motd(id, path, option);
+		show_rules(id, num);
 	}
 	else
 	{
@@ -111,4 +119,52 @@ public ttt_rules_handler(id, menu, item)
 	}
 
 	return PLUGIN_HANDLED;
+}
+
+public cmd_force_rules(id, level, cid)
+{
+	if(!cmd_access(id, level, cid, 2))
+		return PLUGIN_HANDLED;
+
+	static player_name[32], rule_id[3];
+	read_argv(1, player_name, charsmax(player_name));
+	read_argv(2, rule_id, charsmax(rule_id));
+
+	new target = cmd_target(id, player_name, 1);
+	if(target)
+	{
+		new rule = -1;
+		if(is_str_num(rule_id))
+			rule = str_to_num(rule_id)-1;
+
+		new size = ArraySize(g_aFileName);
+		if(-1 < rule < size)
+		{
+			static admin_name[32];
+			get_user_name(id, admin_name, charsmax(admin_name));
+			get_user_name(target, player_name, charsmax(player_name));
+			ttt_log_to_file(LOG_MISC, "Admin %s forced rule with ID #%d to player %s", admin_name, rule, player_name);
+			show_rules(target, rule);
+		}
+		else
+		{
+			static option[20];
+			console_print(id, "Rule with ID %d could not be found, available rules:", rule);
+			for(new i = 0; i < size; i++)
+			{
+				ArrayGetString(g_aFileName, i, option, charsmax(option));
+				console_print(id, "#%d --- %s", i+1, option);
+			}
+		}
+	}
+
+	return PLUGIN_HANDLED;
+}
+
+stock show_rules(id, rule)
+{
+	static option[20], path[64];
+	ArrayGetString(g_aFileName, rule, option, charsmax(option));
+	ArrayGetString(g_aFilePath, rule, path, charsmax(path));
+	show_motd(id, path, option);
 }

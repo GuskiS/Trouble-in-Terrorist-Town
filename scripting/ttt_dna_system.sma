@@ -36,23 +36,24 @@ public client_disconnect(id)
 
 public ttt_gamemode(gamemode)
 {
-	if(gamemode == GAME_ENDED || gamemode == GAME_STARTED)
+	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 	{
-		if(gamemode == GAME_ENDED)
-		{
-			for(new i = 0; i < g_iBodyCount; i++)
-				g_iBodyEnts[i] = false;
-			g_iBodyCount = 0;
-		}
+		for(new i = 0; i < g_iBodyCount; i++)
+			g_iBodyEnts[i] = false;
+		g_iBodyCount = 0;
+	}
+
+	if(gamemode == GAME_PREPARING || gamemode == GAME_STARTED || gamemode == GAME_RESTARTING)
+	{
 
 		new num, id;
-		static players[32];
+		static players[32], out[TTT_ITEMLENGHT];
 		get_players(players, num);
 		for(--num; num >= 0; num--)
 		{
 			id = players[num];
 
-			if(gamemode == GAME_ENDED)
+			if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 			{
 				if(is_user_connected(g_iTracing[id]))
 					ttt_clear_bodydata(g_iTracing[id]);
@@ -63,7 +64,6 @@ public ttt_gamemode(gamemode)
 
 			if(gamemode == GAME_STARTED && ttt_get_playerstate(id) != PC_DETECTIVE)
 			{
-				new out[TTT_ITEMLENGHT];
 				formatex(out, charsmax(out), "%L", id, "TTT_CALLDETECTIVE");
 				g_iBackpack[id] = ttt_backpack_add(id, out);
 			}
@@ -85,12 +85,15 @@ public ttt_item_backpack(id, item, name[])
 		if(ent)
 		{
 			new victim = entity_get_int(ent, EV_INT_iuser1);
-			if(ttt_get_bodydata(victim, BODY_CALLD))
-				client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_CALLDETECTIVE3", id, "TTT_DEADBODY");
-			else
+			if(!ttt_get_playerdata(victim, PD_IDENTIFIED))
 			{
-				ttt_set_bodydata(victim, BODY_CALLD, 1);
-				client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_CALLDETECTIVE2", id, "TTT_DEADBODY");
+				if(ttt_get_bodydata(victim, BODY_CALLD))
+					client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_CALLDETECTIVE3", id, "TTT_DEADBODY");
+				else
+				{
+					ttt_set_bodydata(victim, BODY_CALLD, 1);
+					client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_CALLDETECTIVE2", id, "TTT_DEADBODY");
+				}
 			}
 		}
 		else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_NOBODY", id, "TTT_DEADBODY");
@@ -122,7 +125,7 @@ public used_mouse2(id)
 
 	client_cmd(id, "-attack");
 
-	static name[32];
+	static name[2][32];
 	get_user_name(id, name[0], charsmax(name[]));
 	new ent = find_dead_body_1d(id, g_iBodyEnts, g_iBodyCount);
 	if(ent)
@@ -134,6 +137,7 @@ public used_mouse2(id)
 			ttt_log_to_file(LOG_MISC, "%s started to trace DNA of %s (ent: %d)", name[0], name[1], ent);
 			dna_make_it(id, victim, 0);
 		}
+		else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_DNASAMPLE_MISSING");
 	}
 	else
 	{

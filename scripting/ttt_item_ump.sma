@@ -39,14 +39,17 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: UMP Prototype", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_weapon_clip		= my_register_cvar("ttt_ump_clip",		"10");
-	cvar_weapon_ammo		= my_register_cvar("ttt_ump_ammo",		"30");
-	cvar_weapon_speed		= my_register_cvar("ttt_ump_speed",		"10.0");
-	cvar_weapon_damage		= my_register_cvar("ttt_ump_damage",	"0.0");
-	cvar_weapon_reload		= my_register_cvar("ttt_ump_reload",	"0.0");
-	cvar_weapon_recoil		= my_register_cvar("ttt_ump_recoil",	"0.0");
-	cvar_weapon_price		= my_register_cvar("ttt_price_ump",		"1");
+	cvar_weapon_clip	= my_register_cvar("ttt_ump_clip",		"10",	"UMP Prototype clip ammo. (Default: 10)");
+	cvar_weapon_ammo	= my_register_cvar("ttt_ump_ammo",		"30",	"UMP Prototype backpack ammo. (Default: 30)");
+	cvar_weapon_speed	= my_register_cvar("ttt_ump_speed",		"10.0",	"UMP Prototype attack speed delay. (Default: 10.0)");
+	cvar_weapon_damage	= my_register_cvar("ttt_ump_damage",	"0.0",	"UMP Prototype damage multiplier. (Default: 0.0)");
+	cvar_weapon_reload	= my_register_cvar("ttt_ump_reload",	"0.0",	"UMP Prototype reload speed. (Default: 0.0)");
+	cvar_weapon_recoil	= my_register_cvar("ttt_ump_recoil",	"0.0",	"UMP Prototype recoil. (Default: 0.0)");
+	cvar_weapon_price	= my_register_cvar("ttt_price_ump",		"1",	"UMP Prototype price. (Default: 1)");
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID6");
 	g_iItemID = ttt_buymenu_add(name, get_pcvar_num(cvar_weapon_price), PC_DETECTIVE);

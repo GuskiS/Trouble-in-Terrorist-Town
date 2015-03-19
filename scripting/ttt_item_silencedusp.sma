@@ -46,16 +46,19 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item: Silent USP", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_weapon_clip		= my_register_cvar("ttt_usp_clip",		"10");
-	cvar_weapon_ammo		= my_register_cvar("ttt_usp_ammo",		"50");
-	cvar_weapon_speed		= my_register_cvar("ttt_usp_speed",		"0.9");
-	cvar_weapon_damage		= my_register_cvar("ttt_usp_damage",	"2.0");
-	cvar_weapon_reload		= my_register_cvar("ttt_usp_reload",	"0.0");
-	cvar_weapon_recoil		= my_register_cvar("ttt_usp_recoil",	"0.0");
-	cvar_weapon_price		= my_register_cvar("ttt_price_usp",		"2");
+	cvar_weapon_clip	= my_register_cvar("ttt_usp_clip",		"10",	"Silenced USP clip ammo. (Default: 10)");
+	cvar_weapon_ammo	= my_register_cvar("ttt_usp_ammo",		"50",	"Silenced USP backpack ammo. (Default: 50)");
+	cvar_weapon_speed	= my_register_cvar("ttt_usp_speed",		"0.9",	"Silenced USP attack speed delay. (Default: 0.9)");
+	cvar_weapon_damage	= my_register_cvar("ttt_usp_damage",	"2.0",	"Silenced USP damage multiplier. (Default: 2.0)");
+	cvar_weapon_reload	= my_register_cvar("ttt_usp_reload",	"0.0",	"Silenced USP reload speed. (Default: 0.0)");
+	cvar_weapon_recoil	= my_register_cvar("ttt_usp_recoil",	"0.0",	"Silenced USP recoil. (Default: 0.0)");
+	cvar_weapon_price	= my_register_cvar("ttt_price_usp",		"2",	"Silenced USP price. (Default: 2)");
 
 	RegisterHam(Ham_Weapon_SecondaryAttack, WEAPON_NAME, "Ham_SecondaryAttack_pre", 0);
+}
 
+public ttt_plugin_cfg()
+{
 	new name[TTT_ITEMLENGHT];
 	formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID10");
 	g_iItemID = ttt_buymenu_add(name, get_pcvar_num(cvar_weapon_price), PC_TRAITOR);

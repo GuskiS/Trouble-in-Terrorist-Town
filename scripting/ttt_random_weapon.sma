@@ -53,7 +53,7 @@ public plugin_init()
 {
 	register_plugin("[TTT] Random weapon", TTT_VERSION, TTT_AUTHOR);
 	RegisterHam(Ham_Spawn, "player", "Ham_Spawn_post", 1);
-	cvar_give_nades = my_register_cvar("ttt_give_nades", "0");
+	cvar_give_nades = my_register_cvar("ttt_give_nades", "0", "Should anyone have free nades? (Default: 0)");
 }
 
 public Ham_Spawn_post(id)

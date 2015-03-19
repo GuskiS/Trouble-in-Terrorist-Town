@@ -4,12 +4,13 @@
 #define _ttt_const_included
 
 #if AMXX_VERSION_NUM < 183
-	#define client_print_color client_print
-	#define print_team_default print_chat
-	#define print_team_grey print_chat
-	#define print_team_red print_chat
-	#define print_team_blue print_chat
-	#define print_team_green print_chat
+	#include "ttt_colorchat"
+	#define client_print_color ttt_client_print
+	#define print_team_default NORMAL
+	#define print_team_grey GREY
+	#define print_team_red RED
+	#define print_team_blue BLUE
+	#define print_team_green GREEN
 
 	stock HamHook:RegisterHamPlayer(Ham:function, const Callback[], Post=0)
 		return RegisterHam(function, "player", Callback, Post);
@@ -21,8 +22,8 @@
 	#endif
 #endif
 
-#define TTT_VERSION			"2.5.1"
-#define TTT_VERSION_INT		251
+#define TTT_VERSION			"2.5.2"
+#define TTT_VERSION_INT		252
 #define TTT_AUTHOR			"GuskiS"
 #define TTT_TAG				"^3[^4TTT^3]^1"
 
@@ -37,6 +38,7 @@
 #define TTT_MAXBACKPACK		20 // Max items in backpack.
 #define TTT_SETTINGSFILE	"ttt_mod.ini"
 #define TTT_CONFIGFILE		"ttt_mod.cfg"
+#define TTT_ADMINACCESS		ADMIN_BAN
 
 #pragma semicolon 1
 
@@ -84,7 +86,8 @@ enum _:BODY_DATA
 	BODY_TRACER,	// ID who is tracing killer
 	BODY_ACTIVE,	// Is actually tracing happening
 	BODY_ENTID,		// Bodies entid
-	BODY_CALLD		// Does this body calls Detective to inspect it?
+	BODY_CALLD,		// Does this body calls Detective to inspect it?
+	BODY_EXPLODED	// It exploded :(
 }
 
 enum _:SETUP_DATA
@@ -116,7 +119,11 @@ enum _:PLAYER_DATA
 	PD_KILLEDBYITEM,	// If killed by item, stores that item ID
 	PD_HOLDINGITEM,		// Is holding any item?
 	PD_ITEMSTATE,		// If is holding item, what state this item has?
-	PD_HIDENAME			// Should his name be hidden?
+	PD_HIDENAME,		// Should his name be hidden?
+	PD_OTHERNAME,		// Player ID to steal name from.
+	PD_FAKESTATE,		// Fakes player state.
+	PD_LOYALTY,			// Player loyalty.
+	PD_ITEM_SHARING		// Share item with PLAYERID.
 }
 
 enum _:PLAYER_CLASS
@@ -177,4 +184,13 @@ enum _:BOMB_STATUS
 	BS_DEFUSED,
 	BS_FAILED,
 	BS_BOMBED
+}
+
+enum _:PLAYER_LOYALTY
+{
+	PL_NONE,
+	PL_PROVABLE,
+	PL_SUSPICIOUS,
+	PL_AVOIDABLE,
+	PL_TRAITOROUS
 }

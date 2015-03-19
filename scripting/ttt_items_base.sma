@@ -9,6 +9,7 @@ enum _:ITEM_DATA
 	ITEM_TEAM
 }
 
+new g_pCommandMenuID, g_pMsgBuyClose;
 new g_iTotalItems, g_iSetupItems = -1;
 new g_iItemForward, Array:g_aSetup;
 new g_szItems[TTT_MAXSHOP][ITEM_DATA];
@@ -29,13 +30,13 @@ public plugin_init()
 {
 	register_plugin("[TTT] Item menu base", TTT_VERSION, TTT_AUTHOR);
 
-	register_clcmd("say /buy", "ttt_buymenu_show");
-	register_clcmd("say_team /buy", "ttt_buymenu_show");
+	register_clcmd("say /buy", "ttt_buymenu_showit");
+	register_clcmd("say_team /buy", "ttt_buymenu_showit");
+	g_pCommandMenuID = ttt_command_add("Buy menu");
 
-	//COULD NOT WORK
 	g_aSetup = ArrayCreate(SETUP_DATA);
-
 	g_iItemForward = CreateMultiForward("ttt_item_selected", ET_STOP, FP_CELL, FP_CELL, FP_STRING, FP_CELL);
+	g_pMsgBuyClose = get_user_msgid("BuyClose");
 }
 
 public plugin_end()
@@ -47,6 +48,7 @@ public plugin_natives()
 {
 	register_library("ttt");
 	register_native("ttt_buymenu_add", "_buymenu_add");
+	register_native("ttt_buymenu_show", "_buymenu_show");
 	register_native("ttt_item_setup_add", "_item_setup_add");
 	register_native("ttt_item_setup_remove", "_item_setup_remove");
 	register_native("ttt_item_setup_update", "_item_setup_update");
@@ -54,6 +56,12 @@ public plugin_natives()
 	register_native("ttt_is_item_setup", "_is_item_setup");
 	register_native("ttt_get_item_name", "_get_item_name");
 	register_native("ttt_get_item_id", "_get_item_id");
+}
+
+public ttt_command_selected(id, menuid, name[])
+{
+	if(g_pCommandMenuID == menuid)
+		ttt_buymenu_showit(id);
 }
 
 public ttt_gamemode(gamemode)
@@ -74,7 +82,7 @@ public client_command(id)
 		if(equal(command, g_szBuyCommands[i]))
 		{
 			if(!task_exists(id))
-				set_task(0.1, "ttt_buymenu_show", id);
+				set_task(0.1, "ttt_buymenu_showit", id);
 
 			return PLUGIN_HANDLED;
 		}
@@ -83,15 +91,15 @@ public client_command(id)
 	if(equal(command, "client_buy_open"))
 	{
 		// CHANGED
-		message_begin(MSG_ONE, get_user_msgid("BuyClose"), _, id);
+		message_begin(MSG_ONE, g_pMsgBuyClose, _, id);
 		message_end();
-		ttt_buymenu_show(id);
+		ttt_buymenu_showit(id);
 	}
 
 	return PLUGIN_CONTINUE;
 }
 
-public ttt_buymenu_show(id)
+public ttt_buymenu_showit(id)
 {
 	if(!is_user_alive(id) || ttt_return_check(id))
 		return PLUGIN_HANDLED;
@@ -161,18 +169,29 @@ public ttt_buymenu_handle(id, menu, item)
 		return PLUGIN_HANDLED;
 	}
 
-	new ret;
-	ExecuteForward(g_iItemForward, ret, id, itemid, g_szItems[itemid][ITEM_NAME], g_szItems[itemid][ITEM_COST]);
-
-	if(ret == PLUGIN_HANDLED)
+	new ret, buyer = get_sharing_id(id);
+	if(is_user_alive(buyer))
 	{
-		//emit_sound(id, CHAN_WEAPON, "items/gunpickup2.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
-		client_cmd(id, "spk ^"%s^"", "items/gunpickup2.wav");
-		ttt_set_playerdata(id, PD_CREDITS, credits-g_szItems[itemid][ITEM_COST]);
-	
-		static name[32];
-		get_user_name(id, name, charsmax(name));
-		ttt_log_to_file(LOG_ITEM, "Player %s bought item %s with ID %d", name, g_szItems[itemid][ITEM_NAME], itemid);
+		ExecuteForward(g_iItemForward, ret, buyer, itemid, g_szItems[itemid][ITEM_NAME], g_szItems[itemid][ITEM_COST]);
+
+		if(ret == PLUGIN_HANDLED)
+		{
+			client_cmd(buyer, "spk ^"%s^"", "items/gunpickup2.wav");
+			ttt_set_playerdata(id, PD_CREDITS, credits-g_szItems[itemid][ITEM_COST]);
+		
+			static name[32];
+			get_user_name(id, name, charsmax(name));
+			if(is_sharing(id))
+			{
+				static name_for[32];
+				get_user_name(buyer, name_for, charsmax(name_for));
+				ttt_log_to_file(LOG_ITEM, "Player %s bought item %s with ID %d for player %s", name, g_szItems[itemid][ITEM_NAME], itemid, name_for);
+				ttt_set_playerdata(id, PD_ITEM_SHARING, 0);
+				client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM_FROM", g_szItems[itemid][ITEM_NAME], name_for);
+				client_print_color(buyer, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM_TO", name, g_szItems[itemid][ITEM_NAME]);
+			}
+			else ttt_log_to_file(LOG_ITEM, "Player %s bought item %s with ID %d", name, g_szItems[itemid][ITEM_NAME], itemid);
+		}
 	}
 
 	return PLUGIN_HANDLED;
@@ -189,6 +208,21 @@ public _buymenu_add(plugin, params)
 
 	g_iTotalItems++;
 	return (g_iTotalItems - 1);
+}
+
+public _buymenu_show(plugin, params)
+{
+	if(params != 1)
+		return ttt_log_api_error("ttt_buymenu_show needs 1 param(p1: %d)", plugin, params, get_param(1));
+
+	new id = get_param(1);
+	if(is_user_alive(id))
+	{
+		ttt_buymenu_showit(id);
+		return 1;
+	}
+
+	return 0;
 }
 
 public _item_setup_add(plugin, params)
@@ -308,3 +342,12 @@ public _get_item_id(plugin, params)
 
 	return -2;
 }
+
+stock get_sharing_id(id)
+{
+	new buyer = ttt_get_playerdata(id, PD_ITEM_SHARING);
+	return buyer ? buyer : id;
+}
+
+stock is_sharing(id)
+	return ttt_get_playerdata(id, PD_ITEM_SHARING);

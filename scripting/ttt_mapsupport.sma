@@ -21,7 +21,7 @@ public plugin_init()
 
 	if(g_iJBMap)
 	{
-		cvar_cell_open_delay = my_register_cvar("ttt_cell_open_delay", "10.0");
+		cvar_cell_open_delay = my_register_cvar("ttt_cell_open_delay", "10.0", "Cells can be opened again after X seconds. (Default: 10.0)");
 		setup_buttons();
 		register_clcmd("jail_open", "jail_open");
 		register_clcmd("say /open", "jail_open_id");

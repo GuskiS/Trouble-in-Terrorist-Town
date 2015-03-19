@@ -3,7 +3,6 @@
 #include <fakemeta>
 #include <engine>
 #include <ttt>
-#include <xs>
 
 enum (+= 1111)
 {
@@ -19,14 +18,15 @@ public plugin_init()
 {
 	register_plugin("[TTT] Dead Body", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_credits_det_trakill		= my_register_cvar("ttt_credits_det_trakill",	"1");
-	cvar_credits_det_bonusdead		= my_register_cvar("ttt_credits_det_bonusdead",	"1");
-	cvar_credits_scanned			= my_register_cvar("ttt_credits_scanned",		"10");
-	cvar_allow_scan_anytime			= my_register_cvar("ttt_allow_scan_anytime",	"0");
+	cvar_credits_det_trakill	= my_register_cvar("ttt_credits_det_trakill",	"1",	"Number of credits for killing a Traitor. (Default: 1)");
+	cvar_credits_det_bonusdead	= my_register_cvar("ttt_credits_det_bonusdead",	"1",	"Number of credits for identifieing Traitor body. (Default: 1)");
+	cvar_credits_scanned		= my_register_cvar("ttt_karma_scanned",			"10",	"Number of karma to give for identifieing dead body. (Default: 10)");
+	cvar_allow_scan_anytime		= my_register_cvar("ttt_allow_scan_anytime",	"0",	"Can be idendified without detective? (Default: 0)");
 
-	register_event("ClCorpse", "Message_ClCorpse", "a", "10=0");
+	register_event("ClCorpse", "Event_ClCorpse", "a", "10=0");
 	register_forward(FM_EmitSound, "Forward_EmitSound_pre", 0);
-	RegisterHamPlayer(Ham_Killed, "Ham_Killed_pre", 0);
+	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
+	RegisterHamPlayer(Ham_Spawn, "Ham_Spawn_post", 1);
 
 	g_pShowInfoForward = CreateMultiForward("ttt_showinfo", ET_IGNORE, FP_CELL, FP_CELL);
 	g_pCreateBodyForward = CreateMultiForward("ttt_spawnbody", ET_IGNORE, FP_CELL, FP_CELL);
@@ -49,8 +49,26 @@ public client_disconnect(id)
 	reset_all(id);
 }
 
-public Ham_Killed_pre(victim, killer, shouldgib)
+public Ham_Spawn_post(id)
 {
+	if(is_user_alive(id))
+	{
+		if(is_valid_ent(g_iBodyInfo[id][BODY_ENTID]))
+		{
+			remove_entity(g_iBodyInfo[id][BODY_ENTID]);
+			reset_all(id);
+		}
+	}
+}
+
+public Ham_Killed_post(victim, killer, shouldgib)
+{
+	if(pev(victim, pev_effects) & EF_NODRAW)
+		g_iBodyInfo[victim][BODY_EXPLODED] = true;
+
+	if(!is_user_connected(killer))
+		killer = ttt_find_valid_killer(victim, killer);
+
 	if(!is_user_connected(killer) || ttt_return_check(victim))
 		return HAM_IGNORED;
 
@@ -114,10 +132,10 @@ public round_specials()
 		g_iRoundSpecial[i] = ttt_get_specialcount(i);
 }
 
-public Message_ClCorpse()
+public Event_ClCorpse()
 {
 	new id = read_data(12);
-	if(ttt_return_check(id))
+	if(ttt_return_check(id) || g_iBodyInfo[id][BODY_EXPLODED])
 		return;
 
 	static Float:origin[3], model[32];
@@ -198,7 +216,7 @@ public used_use(id, ent)
 
 			if(ttt_get_playerdata(bodyowner, PD_KILLEDSTATE) == PC_TRAITOR && ttt_get_specialcount(PC_DETECTIVE) > 0)
 			{
-				new bonus, credits;
+				new bonus_dead = get_pcvar_num(cvar_credits_det_bonusdead), bonus_trakill = get_pcvar_num(cvar_credits_det_trakill), credits;
 				new killer = ttt_get_playerdata(bodyowner, PD_KILLEDBY);
 				static name[32];
 				get_user_name(bodyowner, name, charsmax(name));
@@ -211,18 +229,14 @@ public used_use(id, ent)
 					i = players[num];
 					if(ttt_get_playerstate(i) == PC_DETECTIVE)
 					{
-						bonus = get_pcvar_num(cvar_credits_det_bonusdead);
-						credits = ttt_get_playerdata(i, PD_CREDITS) + bonus;
-
-						ttt_set_playerdata(i, PD_CREDITS, credits);
-						client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD3", bonus, i, special_names[PC_TRAITOR], name);
+						credits = ttt_get_playerdata(i, PD_CREDITS);
+						ttt_set_playerdata(i, PD_CREDITS, credits + bonus_dead);
+						client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD3", bonus_dead, i, special_names[PC_TRAITOR], name);
 
 						if(killer == i)
 						{
-							bonus = get_pcvar_num(cvar_credits_det_trakill);
-							credits = ttt_get_playerdata(i, PD_CREDITS) + bonus;
-							ttt_set_playerdata(i, PD_CREDITS, credits);
-							client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD2", bonus, i, special_names[PC_TRAITOR], name);
+							ttt_set_playerdata(i, PD_CREDITS, credits + bonus_dead + bonus_trakill);
+							client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD2", bonus_trakill, i, special_names[PC_TRAITOR], name);
 						}
 					}
 				}

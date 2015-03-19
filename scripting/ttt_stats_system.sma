@@ -20,18 +20,21 @@ new const g_iPointValue[PLAYER_STATS-1] =
 	50        // Bomb defused
 };            
 
-new g_iPlayerStats[33][PLAYER_STATS], g_szPlayerName[33][40], cvar_stats;
+new g_iPlayerStats[33][PLAYER_STATS], g_szPlayerName[33][40], cvar_stats, g_pCommandMenuID1, g_pCommandMenuID2;
 new Handle:g_pSqlTuple, Trie:g_tTop10Players[10];
 
 public plugin_init()
 {
 	register_plugin("[TTT] Stats System", TTT_VERSION, TTT_AUTHOR);
 
-	cvar_stats = my_register_cvar("ttt_stats", "2"); // 1=mysql, 2=sqlite
-	register_clcmd("say /ttttop", "show_top10");
-	register_clcmd("say_team /ttttop", "show_top10");
-	register_clcmd("say /tttstats", "show_stats");
-	register_clcmd("say_team /tttstats", "show_stats");
+	cvar_stats = my_register_cvar("ttt_stats", "2", "Stats 0/1/2 off/MySQL/Sqlite. (Default: 2)");
+	// register_clcmd("say /ttttop", "show_top10");
+	// register_clcmd("say_team /ttttop", "show_top10");
+	// register_clcmd("say /tttstats", "show_stats");
+	// register_clcmd("say_team /tttstats", "show_stats");
+
+	g_pCommandMenuID1 = ttt_command_add("Top 10");
+	g_pCommandMenuID2 = ttt_command_add("Your stats");
 
 	RegisterHamPlayer(Ham_Killed, "Ham_Killed_post", 1);
 }
@@ -56,9 +59,18 @@ public plugin_natives()
 
 public plugin_end()
 {
-	SQL_FreeHandle(g_pSqlTuple);
+	if(g_pSqlTuple)
+		SQL_FreeHandle(g_pSqlTuple);
 	for(new i = 0; i < 10; i++)
 		TrieDestroy(g_tTop10Players[i]);
+}
+
+public ttt_command_selected(id, menuid, name[])
+{
+	if(g_pCommandMenuID1 == menuid)
+		show_top10(id);
+	else if(g_pCommandMenuID2 == menuid)
+		show_stats(id);
 }
 
 public client_putinserver(id)
@@ -113,7 +125,7 @@ public MySQL_Init()
 	else if(cvar == 2)
 	{
 		SQL_SetAffinity("sqlite");
-		g_pSqlTuple = SQL_MakeDbTuple("localhost", "root", "", "ttt_db");
+		g_pSqlTuple = SQL_MakeDbTuple("localhost", "root", "", "ttt_stats");
 
 	}
 	else set_fail_state("[TTT] CVAR set wrongly, plugin turning off!");
@@ -228,12 +240,6 @@ public MySQL_LoadData(failstate, Handle:query, error[], code, data[], datasize)
 
 public MySQL_FreeHandle(failstate, Handle:query, error[], errcode, data[], datasize)
 {
-	if(failstate < 0)
-	{
-		log_amx("Failstate: %d, Code %d", failstate, errcode);
-		log_amx("Error: %s", error);
-		log_amx("Data: %s", data);
-	}
 	SQL_FreeHandle(query);
 	return PLUGIN_HANDLED;
 }
@@ -250,9 +256,10 @@ public MySQL_TOP10Load(failstate, Handle:query, error[], errcode, data[], datasi
 	else if(failstate == TQUERY_QUERY_FAILED)
 		log_amx("[TTT] Load query failed. [%d] %s", errcode, error);
 
-	if(SQL_NumResults(query) > 0) 
+	new result = SQL_NumResults(query);
+	if(result) 
 	{
-		for(new num[3], j, i = 0; i < 10; i++)
+		for(new num[3], j, i = 0; i < result; i++)
 		{
 			static name[32];
 			SQL_ReadResult(query, 1, name, charsmax(name));
@@ -425,6 +432,9 @@ public ttt_bomb_status(id, status, ent)
 
 public Ham_Killed_post(victim, killer, shouldgib)
 {
+	if(!is_user_connected(killer))
+		killer = ttt_find_valid_killer(victim, killer);
+
 	if(is_user_connected(killer) && victim != killer)
 	{
 		new killer_state = ttt_get_alivestate(killer), victim_state = ttt_get_alivestate(victim);
