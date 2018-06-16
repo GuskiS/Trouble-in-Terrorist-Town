@@ -97,12 +97,13 @@ public ttt_gamemode(gamemode)
 	if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
 	{
 		set_pcvar_num(get_cvar_pointer("mp_c4timer"), get_pcvar_num(cvar_c4_default));
-		remove_entity_name("func_bomb_target");
-		remove_entity_name("info_bomb_target");
 	}
 	
 	if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
 	{
+		remove_entity_name("func_bomb_target");
+		remove_entity_name("info_bomb_target");
+
 		Create_BombTarget();
 
 		if(!g_iItemBought)
