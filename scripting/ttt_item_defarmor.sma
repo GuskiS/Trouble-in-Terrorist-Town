@@ -47,6 +47,7 @@ public ttt_gamemode(gamemode)
 		{
 			id = players[num];
 			cs_set_user_armor(id, 0, CsArmorType);
+			cs_set_user_defuse(id, 0);
 		}
 	}
 }
