@@ -63,6 +63,18 @@ public ttt_gamemode(gamemode)
 	}
 }
 
+public client_disconnect(id)
+{
+    new iEnt = -1;
+    while((iEnt = find_ent_by_class(iEnt, TTT_DEATHSTATION)) > 0)
+    {
+        if(entity_get_int(iEnt, EV_INT_iuser1) == id)
+        {
+            remove_entity(iEnt);
+        }
+    }
+} 
+
 public ttt_item_selected(id, item, name[], price)
 {
 	if(g_iItem_DeathStation == item)
