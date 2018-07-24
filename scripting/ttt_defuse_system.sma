@@ -209,7 +209,7 @@ public check_defusion(id, item, c4)
 	if(is_valid_ent(c4))
 	{
 		new ret;
-		if(g_iPlayerWires[id][1][item])
+		if(g_iPlayerWires[id][1][item] || cs_get_user_defuse(id))
 		{
 			message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("BarTime"), _, id);
 			write_short(1);
