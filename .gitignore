@@ -1,2 +1,9 @@
-*.exe
-*.dll
+scripting/amxxpc*
+scripting/compile*
+scripting/include/*
+
+!scripting/include/amx_settings_api.inc
+!scripting/include/round_terminator.inc
+!scripting/include/timer_controller.inc
+!scripting/include/cs_*.inc
+!scripting/include/ttt*.inc
