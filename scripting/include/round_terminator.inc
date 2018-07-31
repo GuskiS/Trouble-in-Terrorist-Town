@@ -8,26 +8,26 @@
 
 enum /* Round End Type */
 {
-    RoundEndType_Timer = 0,
-    RoundEndType_TeamExtermination,
-    RoundEndType_Objective,
-    RoundEndType_Draw
+  RoundEndType_Timer = 0,
+  RoundEndType_TeamExtermination,
+  RoundEndType_Objective,
+  RoundEndType_Draw
 };
 
 enum /* Team Winning */
 {
-    TeamWinning_None = 0,
-    TeamWinning_Terrorist,
-    TeamWinning_Ct
+  TeamWinning_None = 0,
+  TeamWinning_Terrorist,
+  TeamWinning_Ct
 };
 
 enum /* Map Type */
 { 
-    MapType_AutoDetect = 0,
-    MapType_VipAssasination,
-    MapType_Bomb,
-    MapType_Hostage,
-    MapType_PrisonEscape
+  MapType_AutoDetect = 0,
+  MapType_VipAssasination,
+  MapType_Bomb,
+  MapType_Hostage,
+  MapType_PrisonEscape
 };
 
 /**

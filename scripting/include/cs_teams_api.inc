@@ -4,12 +4,12 @@
 #define _cs_teams_api_included
 
 #if AMXX_VERSION_NUM >= 175
-	#pragma reqlib cs_teams_api
-	#if !defined AMXMODX_NOAUTOLOAD
-		#pragma loadlib cs_teams_api
-	#endif
+  #pragma reqlib cs_teams_api
+  #if !defined AMXMODX_NOAUTOLOAD
+    #pragma loadlib cs_teams_api
+  #endif
 #else
-	#pragma library cs_teams_api
+  #pragma library cs_teams_api
 #endif
 
 #include <cstrike>

@@ -1,17 +1,17 @@
 #if defined _ttt_included
-	#endinput
+  #endinput
 #endif
 #define _ttt_included
 
 #include <ttt_const> 
 
 #if AMXX_VERSION_NUM >= 175
-    #pragma reqlib ttt
-    #if !defined AMXMODX_NOAUTOLOAD
-        #pragma loadlib ttt
-    #endif
+  #pragma reqlib ttt
+  #if !defined AMXMODX_NOAUTOLOAD
+    #pragma loadlib ttt
+  #endif
 #else
-    #pragma library ttt
+  #pragma library ttt
 #endif
 
 /**
