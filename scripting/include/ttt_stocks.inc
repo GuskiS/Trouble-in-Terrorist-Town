@@ -262,6 +262,10 @@ stock ttt_find_valid_killer(victim, killer)
   return new_killer ? new_killer : killer;
 }
 
+stock ttt_user_or_server(id) {
+  return is_user_connected(id) ? id : 0;
+}
+
 stock ttt_get_kill_message(victim, killer, message[], len, type=0)
 {
   if(!is_user_alive(victim))
