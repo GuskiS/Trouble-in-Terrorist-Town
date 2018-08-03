@@ -26,8 +26,8 @@
   #define client_disconnect client_disconnected
 #endif
 
-#define TTT_VERSION      "2.5.2"
-#define TTT_VERSION_INT  252
+#define TTT_VERSION      "2.6.0"
+#define TTT_VERSION_INT  260
 #define TTT_AUTHOR       "GuskiS"
 #define TTT_TAG          "^3[^4TTT^3]^1"
 
