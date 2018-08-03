@@ -26,23 +26,23 @@
   #define client_disconnect client_disconnected
 #endif
 
-#define TTT_VERSION			"2.5.2"
-#define TTT_VERSION_INT		252
-#define TTT_AUTHOR			"GuskiS"
-#define TTT_TAG				"^3[^4TTT^3]^1"
+#define TTT_VERSION      "2.5.2"
+#define TTT_VERSION_INT  252
+#define TTT_AUTHOR       "GuskiS"
+#define TTT_TAG          "^3[^4TTT^3]^1"
 
-#define TTT_DEADBODY		"ttt_dead_body"
-#define TTT_HPSTATION		"ttt_hp_station"
-#define TTT_DEATHSTATION	"ttt_death_station"
-#define TTT_C4_SUB			"ttt_c4_subent"
+#define TTT_DEADBODY     "ttt_dead_body"
+#define TTT_HPSTATION    "ttt_hp_station"
+#define TTT_DEATHSTATION "ttt_death_station"
+#define TTT_C4_SUB       "ttt_c4_subent"
 
-#define TTT_ITEMLENGHT		64 // Max length of items name.
-#define TTT_FILELENGHT		64 // Max length of files name.
-#define TTT_MAXSHOP			25 // Max items in shop.
-#define TTT_MAXBACKPACK		20 // Max items in backpack.
-#define TTT_SETTINGSFILE	"ttt_mod.ini"
-#define TTT_CONFIGFILE		"ttt_mod.cfg"
-#define TTT_ADMINACCESS		ADMIN_BAN
+#define TTT_ITEMLENGHT   64 // Max length of items name.
+#define TTT_FILELENGHT   64 // Max length of files name.
+#define TTT_MAXSHOP      25 // Max items in shop.
+#define TTT_MAXBACKPACK  20 // Max items in backpack.
+#define TTT_SETTINGSFILE "ttt_mod.ini"
+#define TTT_CONFIGFILE   "ttt_mod.cfg"
+#define TTT_ADMINACCESS  ADMIN_BAN
 
 #pragma semicolon 1
 
@@ -58,18 +58,18 @@ stock const g_iTeamColors[][] =
 
 enum _:PLAYER_STATS
 {
-  STATS_GWK,			// Game winning kills
-  STATS_KILLS_I,		// Kills as Innocent // Right ones
-  STATS_KILLS_D,		// Kills as Detective
-  STATS_KILLS_T,		// Kills as Traitor
-  STATS_RDM,			// Team kills
-  STATS_INN,			// Times innocent
-  STATS_DET,			// Times detective
-  STATS_TRA,			// Times traitor
-  STATS_BOMBP,		// Bomb planted
-  STATS_BOMBE,		// Bomb exploded
-  STATS_BOMBD,		// Bomb defused
-  STATS_POINTS		// Total points
+  STATS_GWK,      // Game winning kills
+  STATS_KILLS_I,  // Kills as Innocent // Right ones
+  STATS_KILLS_D,  // Kills as Detective
+  STATS_KILLS_T,  // Kills as Traitor
+  STATS_RDM,      // Team kills
+  STATS_INN,      // Times innocent
+  STATS_DET,      // Times detective
+  STATS_TRA,      // Times traitor
+  STATS_BOMBP,    // Bomb planted
+  STATS_BOMBE,    // Bomb exploded
+  STATS_BOMBD,    // Bomb defused
+  STATS_POINTS    // Total points
 }
 
 enum _:LOG_MESSAGES(<<= 1)
@@ -85,49 +85,49 @@ enum _:LOG_MESSAGES(<<= 1)
 
 enum _:BODY_DATA
 {
-  BODY_TIME,		// DNA active time
-  BODY_KILLER,	// ID who killed
-  BODY_TRACER,	// ID who is tracing killer
-  BODY_ACTIVE,	// Is actually tracing happening
-  BODY_ENTID,		// Bodies entid
-  BODY_CALLD,		// Does this body calls Detective to inspect it?
-  BODY_EXPLODED	// It exploded :(
+  BODY_TIME,    // DNA active time
+  BODY_KILLER,  // ID who killed
+  BODY_TRACER,  // ID who is tracing killer
+  BODY_ACTIVE,  // Is actually tracing happening
+  BODY_ENTID,   // Bodies entid
+  BODY_CALLD,   // Does this body calls Detective to inspect it?
+  BODY_EXPLODED // It exploded :(
 }
 
 enum _:SETUP_DATA
 {
-  SETUP_ITEMID,		// Item ID obviously
-  SETUP_ITEMENT,		// Set up items entid
-  SETUP_ITEMTIME,		// Time for DNA, I think
-  SETUP_ITEMOWNER,	// Items owner ID
-  SETUP_ITEMTRACER,	// Tracers ID
-  SETUP_ITEMACTIVE,	// Is tracing active
-  SETUP_ITEMNAME[TTT_ITEMLENGHT]	// Items name
+  SETUP_ITEMID,                   // Item ID obviously
+  SETUP_ITEMENT,                  // Set up items entid
+  SETUP_ITEMTIME,                 // Time for DNA, I think
+  SETUP_ITEMOWNER,                // Items owner ID
+  SETUP_ITEMTRACER,               // Tracers ID
+  SETUP_ITEMACTIVE,               // Is tracing active
+  SETUP_ITEMNAME[TTT_ITEMLENGHT]  // Items name
 }
 
 enum _:PLAYER_DATA
 {
-  PD_KILLEDBY,		// Killers ID
-  PD_KILLEDWEAP,		// Weapons ID
-  PD_KILLEDTIME,		// Some time, get_roundtime I guess
-  PD_KILLEDSTATE,		// Killed state
-  PD_KILLEDDEATHS,	// Players death count
-  PD_KILLCOUNT,		// Players kill count
-  PD_IDENTIFIED,		// Is he identified?
-  PD_KARMA,			// Players karma, the one used in damge calculations
-  PD_KARMATEMP,		// Temporary karma, the one actually being changed all the time
-  PD_CREDITS,			// Players credits
-  PD_C4EXPLODED,		// Did he explode C4 :O
-  PD_SCOREBOARD,		// Holds info about scoreboard (1 means cant change)
-  PD_PLAYERSTATE,		// Why the fuck is this last one? ;o
-  PD_KILLEDBYITEM,	// If killed by item, stores that item ID
-  PD_HOLDINGITEM,		// Is holding any item?
-  PD_ITEMSTATE,		// If is holding item, what state this item has?
-  PD_HIDENAME,		// Should his name be hidden?
-  PD_OTHERNAME,		// Player ID to steal name from.
-  PD_FAKESTATE,		// Fakes player state.
-  PD_LOYALTY,			// Player loyalty.
-  PD_ITEM_SHARING		// Share item with PLAYERID.
+  PD_KILLEDBY,      // Killers ID
+  PD_KILLEDWEAP,    // Weapons ID
+  PD_KILLEDTIME,    // Some time, get_roundtime I guess
+  PD_KILLEDSTATE,   // Killed state
+  PD_KILLEDDEATHS,  // Players death count
+  PD_KILLCOUNT,     // Players kill count
+  PD_IDENTIFIED,    // Is he identified?
+  PD_KARMA,         // Players karma, the one used in damge calculations
+  PD_KARMATEMP,     // Temporary karma, the one actually being changed all the time
+  PD_CREDITS,       // Players credits
+  PD_C4EXPLODED,    // Did he explode C4 :O
+  PD_SCOREBOARD,    // Holds info about scoreboard (1 means cant change)
+  PD_PLAYERSTATE,   // Why the fuck is this last one? ;o
+  PD_KILLEDBYITEM,  // If killed by item, stores that item ID
+  PD_HOLDINGITEM,   // Is holding any item?
+  PD_ITEMSTATE,     // If is holding item, what state this item has?
+  PD_HIDENAME,      // Should his name be hidden?
+  PD_OTHERNAME,     // Player ID to steal name from.
+  PD_FAKESTATE,     // Fakes player state.
+  PD_LOYALTY,       // Player loyalty.
+  PD_ITEM_SHARING   // Share item with PLAYERID.
 }
 
 enum _:PLAYER_CLASS
