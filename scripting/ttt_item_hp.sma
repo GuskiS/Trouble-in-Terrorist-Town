@@ -5,6 +5,8 @@
 #include <ttt>
 #include <amx_settings_api>
 
+#define MAX_HEAL_DISTANCE 50.0
+
 enum _:HPSTATION
 {
   CHARGE,
@@ -129,7 +131,7 @@ public Ham_ObjectCaps_pre(id)
   new ent, body;
   get_user_aiming(id, ent, body);
 
-  if(ent > 0 && entity_range(id, ent) < 50.0)
+  if(ent > 0 && entity_range(id, ent) < MAX_HEAL_DISTANCE)
   {
     static classname[32];
     entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
@@ -233,7 +235,7 @@ public hp_station_use(id)
 
   if(is_valid_ent(ent))
   {
-    if(entity_range(id, ent) < 50.0)
+    if(entity_range(id, ent) > MAX_HEAL_DISTANCE)
       remove_all(id);
   }
 }
