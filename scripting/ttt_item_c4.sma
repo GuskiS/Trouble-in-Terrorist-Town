@@ -39,7 +39,6 @@ new g_iC4Sync[MAX_C4], Float:g_fWaitTime[33], g_iC4Sprite, g_iItemBought, g_pBom
 
 public plugin_precache()
 {
-  // Create_BombTarget();
   new sprites[TTT_FILELENGHT];
   if(!amx_load_setting_string(TTT_SETTINGSFILE, "C4", "Sprite", sprites, charsmax(sprites)))
   {
@@ -53,11 +52,11 @@ public plugin_init()
 {
   register_plugin("[TTT] Item: C4", TTT_VERSION, TTT_AUTHOR);
 
-  cvar_c4_default	= my_register_cvar("ttt_c4_default",	"45",	"Default timer for C4. (Default: 45)");
-  cvar_c4_maxtime	= my_register_cvar("ttt_c4_maxtime",	"180",	"Max timer for C4. (Default: 180)");
-  cvar_c4_mintime	= my_register_cvar("ttt_c4_mintime",	"30",	"Min timer for C4. (Default: 30)");
-  cvar_c4_elapsed	= my_register_cvar("ttt_c4_elapsed", 	"45",	"Min round time elapsed to plant C4. (Default: 45)");
-  cvar_price_c4	= my_register_cvar("ttt_price_c4", 		"3",	"C4 price. (Default: 3)");
+  cvar_c4_default = my_register_cvar("ttt_c4_default", "45",  "Default timer for C4. (Default: 45)");
+  cvar_c4_maxtime = my_register_cvar("ttt_c4_maxtime", "180", "Max timer for C4. (Default: 180)");
+  cvar_c4_mintime = my_register_cvar("ttt_c4_mintime", "30",  "Min timer for C4. (Default: 30)");
+  cvar_c4_elapsed = my_register_cvar("ttt_c4_elapsed", "45",  "Min round time elapsed to plant C4. (Default: 45)");
+  cvar_price_c4   = my_register_cvar("ttt_price_c4",   "3",   "C4 price. (Default: 3)");
 
   register_logevent("Event_C4_Att", 3, "2=Dropped_The_Bomb");
   register_logevent("Event_C4_Att", 3, "2=Got_The_Bomb");
@@ -97,12 +96,13 @@ public ttt_gamemode(gamemode)
   if(gamemode == GAME_ENDED || gamemode == GAME_RESTARTING)
   {
     set_pcvar_num(get_cvar_pointer("mp_c4timer"), get_pcvar_num(cvar_c4_default));
-    remove_entity_name("func_bomb_target");
-    remove_entity_name("info_bomb_target");
   }
   
   if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
   {
+    remove_entity_name("func_bomb_target");
+    remove_entity_name("info_bomb_target");
+
     Create_BombTarget();
 
     if(!g_iItemBought)
