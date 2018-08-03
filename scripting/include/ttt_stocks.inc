@@ -573,6 +573,12 @@ stock remove_user_shield(id)
   return -id;
 }
 
+stock entity_has_class(ent, string[]) {
+  static classname[32];
+  entity_get_string(ent, EV_SZ_classname, classname, charsmax(classname));
+  return equal(classname, string);
+}
+
 stock is_holding_dna_scanner(id)
 {
   static DNAScannerID;
