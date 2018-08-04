@@ -120,7 +120,7 @@ public ttt_show_me(id)
     len += formatex(msg[len], SIZE - len, "<center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
 
     new num, player, count, alive_state;
-    static players[32], name[32];
+    static players[32], name[64];
     get_players(players, num);
     for(--num; num >= 0; num--)
     {
@@ -129,7 +129,7 @@ public ttt_show_me(id)
       {
         count++;
         alive_state = ttt_get_alivestate(player);
-        get_user_name(player, name, charsmax(name));
+        get_user_escaped_name(player, name, charsmax(name));
         len += formatex(msg[len], SIZE - len, "<b style='color:%s'>[%L] %s</b></br>", g_szColors[alive_state], id, special_names[alive_state], name);
       }
     }
@@ -165,7 +165,7 @@ public show_motd_winner(id)
   if(!g_iCached[0])
   {
     new i, highest, num, killedstate, currentstate;
-    new name[32], Traitors[256], Detectives[256], suicide[128], kills[128], c4[70], out[64], players[32];
+    new name[64], Traitors[256], Detectives[256], suicide[128], kills[128], c4[70], out[64], players[32];
 
     get_players(players, num);
     for(--num; num >= 0; num--)
@@ -174,7 +174,7 @@ public show_motd_winner(id)
 
       killedstate = ttt_get_alivestate(i);
       currentstate = ttt_get_playerstate(i);
-      get_user_name(i, name, charsmax(name));
+      get_user_escaped_name(i, name, charsmax(name));
 
       if(currentstate == PC_TRAITOR || killedstate == PC_TRAITOR)
         format(Traitors, charsmax(Traitors), "%s, %s", name, Traitors);
@@ -245,7 +245,7 @@ public show_motd_winner(id)
 
   // len += formatex(wholemsg[len], SIZE - len, "%L</br>", LANG_SERVER, "TTT_WINNER_LINE7");
   new num, player, count, alive_state;
-  static players[32], name[32];
+  static players[32], name[64];
   get_players(players, num);
   for(--num; num >= 0; num--)
   {
@@ -254,7 +254,7 @@ public show_motd_winner(id)
     {
       count++;
       alive_state = ttt_get_alivestate(player);
-      get_user_name(player, name, charsmax(name));
+      get_user_escaped_name(player, name, charsmax(name));
       len += formatex(wholemsg[len], SIZE - len, "%L <b style='color:%s'>[%L] %s</b></br>", LANG_SERVER, "TTT_WINNER_LINE7", g_szColors[alive_state], LANG_SERVER, special_names[alive_state], name);
     }
   }
@@ -272,8 +272,8 @@ public show_motd_winner(id)
 
 public show_motd_info(id, target)
 {
-  static name[2][32], killmsg[64];
-  get_user_name(target, name[0], charsmax(name[]));
+  static name[2][64], killmsg[64];
+  get_user_escaped_name(target, name[0], charsmax(name[]));
   new minutes = (ttt_get_playerdata(target, PD_KILLEDTIME) / 60) % 60;
   new seconds = ttt_get_playerdata(target, PD_KILLEDTIME) % 60;
   ttt_get_kill_message(target, ttt_get_playerdata(target, PD_KILLEDBY), killmsg, charsmax(killmsg), 0);
@@ -293,7 +293,7 @@ public show_motd_info(id, target)
 
   show_motd(id, msg, motdname);
 
-  get_user_name(id, name[1], charsmax(name[]));
+  get_user_escaped_name(id, name[1], charsmax(name[]));
   ttt_log_to_file(LOG_MISC, "%s inspected deadbody of %s", name[1], name[0]);
 }
 
@@ -308,7 +308,7 @@ public show_last_states(id)
     len += formatex(msg[len], SIZE - len, html_head(""));
 
     new num, player, player_state, count[PLAYER_CLASS];
-    static players[32], name[32];
+    static players[32], name[64];
     get_players(players, num);
     for(--num; num >= 0; num--)
     {
@@ -317,7 +317,7 @@ public show_last_states(id)
       if(player_state > -1)
       {
         count[player_state]++;
-        get_user_name(player, name, charsmax(name));
+        get_user_escaped_name(player, name, charsmax(name));
         len += formatex(msg[len], SIZE - len, "<b style='color:%s'>[%L] %s</b></br>", g_szColors[player_state], id, special_names[player_state], name);
       }
     }
@@ -347,3 +347,11 @@ stock html_head(url[], any: ...) {
   return style;
 }
 
+stock get_user_escaped_name(id, name[], len)
+{
+  get_user_name(id, name, len);
+  replace_all(name, len, "^"", "&quot;");
+  replace_all(name, len, "&", "&amp;");
+  replace_all(name, len, "<", "&lt;");
+  replace_all(name, len, ">", "&gt;");
+}
