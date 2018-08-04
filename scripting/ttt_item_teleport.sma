@@ -64,12 +64,10 @@ public ttt_item_backpack(id, item, name[])
 {
   if(g_iHasTeleporter[id])
   {
-    if(g_iItem_Coordinates[id] == item)
+    if(g_iItem_Coordinates[id] == item && !(entity_get_int(id, EV_INT_flags) & FL_DUCKING))
     {
       ttt_backpack_remove(id, g_iItem_Coordinates[id]);
       entity_get_vector(id, EV_VEC_origin, g_fPlayerOrigin[id]);
-      if(entity_get_int(id, EV_INT_flags) & FL_DUCKING)
-        g_fPlayerOrigin[id][2] += 40.0;
 
       static out[TTT_ITEMLENGHT];
       formatex(out, charsmax(out), "%L", id, "TTT_ITEM_TELE1", g_fPlayerOrigin[id][0], g_fPlayerOrigin[id][1], g_fPlayerOrigin[id][2]);
