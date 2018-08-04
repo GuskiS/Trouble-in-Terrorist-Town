@@ -74,7 +74,7 @@ public ttt_gamemode(gamemode)
 
 public ttt_item_selected(id, item, name[], price)
 {
-  if(g_iItem_Jihad == item)
+  if(g_iItem_Jihad == item && !g_iHasJihad[id])
   {
     g_iItemBought = true;
     g_iHasJihad[id] = true;

@@ -74,7 +74,7 @@ public ttt_gamemode(gamemode)
 
 public ttt_item_selected(id, item, name[], price)
 {
-  if(g_iItem_HPStation == item)
+  if(g_iItem_HPStation == item && !g_iHasHPStation[id])
   {
     if(g_iHPStation[id][CHARGE] < 1)
     {

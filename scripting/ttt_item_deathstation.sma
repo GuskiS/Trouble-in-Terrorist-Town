@@ -65,7 +65,7 @@ public ttt_gamemode(gamemode)
 
 public ttt_item_selected(id, item, name[], price)
 {
-  if(g_iItem_DeathStation == item)
+  if(g_iItem_DeathStation == item && !g_iHasDeathStation[id])
   {
     g_iHasDeathStation[id] = true;
     client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM2", name, id, "TTT_ITEM_BACKPACK", name);
