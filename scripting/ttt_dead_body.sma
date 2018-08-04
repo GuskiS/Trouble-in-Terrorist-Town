@@ -198,8 +198,13 @@ public used_use(id, ent)
     return;
 
   new identified = ttt_get_playerdata(bodyowner, PD_IDENTIFIED);
-  if(ttt_get_playerstate(id) == PC_DETECTIVE || identified || g_iRoundSpecial[PC_DETECTIVE] == 0 || get_pcvar_num(cvar_allow_scan_anytime))
+  if(identified || g_iRoundSpecial[PC_DETECTIVE] == 0 || get_pcvar_num(cvar_allow_scan_anytime) || ttt_get_playerstate(id) == PC_DETECTIVE)
   {
+    static playername[32], deadname[32];
+    get_user_name(id, playername, charsmax(playername));
+    get_user_name(bodyowner, deadname, charsmax(deadname));
+    ttt_log_to_file(LOG_MISC, "%s (id: %d) started to inspect deadbody of %s (id: %d)", playername, id, deadname, bodyowner);
+
     if(!identified)
     {
       new scanned = get_pcvar_num(cvar_credits_scanned);
@@ -218,8 +223,6 @@ public used_use(id, ent)
       {
         new bonus_dead = get_pcvar_num(cvar_credits_det_bonusdead), bonus_trakill = get_pcvar_num(cvar_credits_det_trakill), credits;
         new killer = ttt_get_playerdata(bodyowner, PD_KILLEDBY);
-        static name[32];
-        get_user_name(bodyowner, name, charsmax(name));
 
         new num, i;
         static players[32];
@@ -231,12 +234,12 @@ public used_use(id, ent)
           {
             credits = ttt_get_playerdata(i, PD_CREDITS);
             ttt_set_playerdata(i, PD_CREDITS, credits + bonus_dead);
-            client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD3", bonus_dead, i, special_names[PC_TRAITOR], name);
+            client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD3", bonus_dead, i, special_names[PC_TRAITOR], deadname);
 
             if(killer == i)
             {
               ttt_set_playerdata(i, PD_CREDITS, credits + bonus_dead + bonus_trakill);
-              client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD2", bonus_trakill, i, special_names[PC_TRAITOR], name);
+              client_print_color(i, print_team_default, "%s %L", TTT_TAG, i, "TTT_AWARD2", bonus_trakill, i, special_names[PC_TRAITOR], deadname);
             }
           }
         }
