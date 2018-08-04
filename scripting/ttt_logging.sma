@@ -87,12 +87,17 @@ public ttt_bomb_status(id, status, ent)
     "planted",
     "defused",
     "failed to defuse",
-    "exploded"
+    "exploded",
+    "changed time of"
   };
 
   static name[32];
   get_user_name(id, name, charsmax(name));
-  _ttt_log_to_file(LOG_ITEM, "%s %s the C4", name, c4_status[status]);
+  if(status == BS_TIMED) {
+    _ttt_log_to_file(LOG_ITEM, "%s %s the C4 to: %d", name, c4_status[status], ent);
+  } else {
+    _ttt_log_to_file(LOG_ITEM, "%s %s the C4, ent: %d", name, c4_status[status], ent);
+  }
 }
 
 public Ham_TakeDamage_post(victim, inflictor, attacker, Float:damage, bits)

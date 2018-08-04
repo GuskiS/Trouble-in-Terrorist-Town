@@ -239,6 +239,10 @@ public _item_setup_add(plugin, params)
   data[SETUP_ITEMACTIVE] = get_param(6);
   get_string(7, data[SETUP_ITEMNAME], charsmax(data[SETUP_ITEMNAME]));
 
+  static name[32];
+  get_user_name(data[SETUP_ITEMOWNER], name, charsmax(name));
+  ttt_log_to_file(LOG_ITEM, "Item %s (id: %d) has been setup (ent: %d) by %s (id: %d)", data[SETUP_ITEMNAME], data[SETUP_ITEMID], data[SETUP_ITEMENT], name, data[SETUP_ITEMOWNER]);
+
   ArrayPushArray(g_aSetup, data);
   g_iSetupItems = ArraySize(g_aSetup);
 

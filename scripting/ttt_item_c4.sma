@@ -298,10 +298,11 @@ public C4Timer(id)
   new time_min = get_pcvar_num(cvar_c4_mintime), time_max = get_pcvar_num(cvar_c4_maxtime);
   if(is_str_num(number))
   {
-    new time_cur = str_to_num(number);
+    new time_cur = str_to_num(number), ret;
     if(time_min <= time_cur <= time_max)
     {
       g_iC4Time[id] = time_cur;
+      ExecuteForward(g_pBombStatusForward, ret, id, BS_TIMED, time_cur);
       client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C42", time_cur);
     }
     else client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_C41", time_min, time_max);

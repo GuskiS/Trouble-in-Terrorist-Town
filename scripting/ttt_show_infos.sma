@@ -313,7 +313,7 @@ public show_motd_info(id, target)
   show_motd(id, msg, motdname);
 
   get_user_name(id, name[1], charsmax(name[]));
-  ttt_log_to_file(LOG_MISC, "%s inspected deadbody of %s", name[1], name[0]);
+  ttt_log_to_file(LOG_MISC, "%s (id: %d) inspected deadbody of %s (id: %d)", name[1], id, name[0], target);
 }
 
 public show_last_states(id)
