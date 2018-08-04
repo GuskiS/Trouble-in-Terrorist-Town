@@ -4,12 +4,6 @@
 #include <ttt>
 
 new g_iCached[2], g_iKilledWho[33][33], g_pCommandMenuID1, g_pCommandMenuID2, g_iPlayerStates[33][2];
-new const g_szIconNames[][] = 
-{
-  "suicide", "p228", "", "scout", "hegrenade", "xm1014", "c4", "mac10", "aug", "hegrenade", "elite", "fiveseven",
-  "ump45", "sg550", "galil", "famas", "usp", "glock18", "awp", "mp5navy", "m249", "m3", "m4a1", "tmp", "g3sg1", "hegrenade",
-  "deagle", "sg552", "ak47", "crowbar", "p90", "0", "1", "2", "3"
-};
 
 new const g_szColors[][] = 
 {
@@ -21,23 +15,10 @@ new const g_szColors[][] =
   "#F57011"  // orange
 };
 
-public plugin_precache()
-{
-  static icon[32];
-  for(new i = 0; i <= charsmax(g_szIconNames); i++)
-  {
-    if(i < 5 && strlen(g_szIconNames[i]) < 3) continue;
-    formatex(icon, charsmax(icon), "gfx/ttt/%s.gif", g_szIconNames[i]);
-    precache_generic(icon);
-  }
-}
-
 public plugin_init()
 {
   register_plugin("[TTT] Show infos", TTT_VERSION, TTT_AUTHOR);
 
-  // register_clcmd("say /tttme", "ttt_show_me");
-  // register_clcmd("say_team /tttme", "ttt_show_me");
   g_pCommandMenuID1 = ttt_command_add("/me");
   g_pCommandMenuID2 = ttt_command_add("Last states");
 
@@ -135,8 +116,8 @@ public ttt_show_me(id)
     static msg[SIZE+1];
     new len;
 
-    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top;}</style></head><body>");
-    len += formatex(msg[len], SIZE - len, "</br><center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
+    len += formatex(msg[len], SIZE - len, html_head(""));
+    len += formatex(msg[len], SIZE - len, "<center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
 
     new num, player, count, alive_state;
     static players[32], name[32];
@@ -239,8 +220,8 @@ public show_motd_winner(id)
     else if(winner == PC_INNOCENT)
       formatex(out, charsmax(out), "%L", LANG_SERVER, "TTT_IWIN");
 
-    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('gfx/ttt/%d.gif') no-repeat center top;}</style></head><body>", winner);
-    len += formatex(msg[len], SIZE - len, "</br><center><h1>%s</h1></center>", out);
+    len += formatex(msg[len], SIZE - len, html_head("url('http://%s/ttt/%d.gif')", TTT_REMOTE_HOST, winner));
+    len += formatex(msg[len], SIZE - len, "<center><h1>%s</h1></center>", out);
 
     if(strlen(Detectives) > 0)
       len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L: %s</b><br/>", g_szColors[PC_DETECTIVE], LANG_SERVER, special_names[PC_DETECTIVE], Detectives);
@@ -303,10 +284,10 @@ public show_motd_info(id, target)
   if(killedstate > 3)
     killedstate = 0;
 
-  len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('gfx/ttt/%d.gif') no-repeat center top;}</style></head><body>", killedstate);
-  len += formatex(msg[len], SIZE - len, "</br><center><h1>%L %s</h1>", id, special_names[killedstate], name[0]);
+  len += formatex(msg[len], SIZE - len, html_head("url('http://%s/ttt/%d.gif')", TTT_REMOTE_HOST, killedstate));
+  len += formatex(msg[len], SIZE - len, "<center><h1>%L %s</h1>", id, special_names[killedstate], name[0]);
   len += formatex(msg[len], SIZE - len, "<h1>%L</h1>", id, "TTT_INFO_LINE3", g_szColors[killedstate], ttt_get_bodydata(target, BODY_TIME));
-  len += formatex(msg[len], SIZE - len, "%L <img src='gfx/ttt/%s.gif'></center>", id, "TTT_INFO_LINE2", g_szColors[killedstate], minutes, seconds, killmsg);
+  len += formatex(msg[len], SIZE - len, "%L <img src='http://%s/ttt/%s.gif'></center>", id, "TTT_INFO_LINE2", g_szColors[killedstate], minutes, seconds, TTT_REMOTE_HOST, killmsg);
   len += formatex(msg[len], SIZE - len, "</body></html>");
   formatex(motdname, charsmax(motdname), "%L", id, "TTT_INFO_LINE1");
 
@@ -324,7 +305,7 @@ public show_last_states(id)
   if(!g_iCached[1])
   {
     new len;
-    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top;}</style></head><body>");
+    len += formatex(msg[len], SIZE - len, html_head(""));
 
     new num, player, player_state, count[PLAYER_CLASS];
     static players[32], name[32];
@@ -358,3 +339,11 @@ public show_last_states(id)
   if(show)
     show_motd(id, msg, "");
 }
+
+stock html_head(url[], any: ...) {
+  new style[192], background[48];
+  vformat(background, charsmax(background), url, 2);
+  formatex(style, charsmax(style), "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 %s no-repeat center top; margin: 30px 10px;}</style></head><body>", background);
+  return style;
+}
+
