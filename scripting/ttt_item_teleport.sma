@@ -64,22 +64,25 @@ public ttt_item_backpack(id, item, name[])
 {
   if(g_iHasTeleporter[id])
   {
-    if(g_iItem_Coordinates[id] == item && !(entity_get_int(id, EV_INT_flags) & FL_DUCKING))
+    if(g_iItem_Coordinates[id] == item)
     {
-      ttt_backpack_remove(id, g_iItem_Coordinates[id]);
-      entity_get_vector(id, EV_VEC_origin, g_fPlayerOrigin[id]);
+      if(!(entity_get_int(id, EV_INT_flags) & FL_DUCKING)) {
+        ttt_backpack_remove(id, g_iItem_Coordinates[id]);
+        entity_get_vector(id, EV_VEC_origin, g_fPlayerOrigin[id]);
 
-      static out[TTT_ITEMLENGHT];
-      formatex(out, charsmax(out), "%L", id, "TTT_ITEM_TELE1", g_fPlayerOrigin[id][0], g_fPlayerOrigin[id][1], g_fPlayerOrigin[id][2]);
-      g_iItem_Coordinates[id] = ttt_backpack_add(id, out);
+        static out[TTT_ITEMLENGHT];
+        formatex(out, charsmax(out), "%L", id, "TTT_ITEM_TELE1", g_fPlayerOrigin[id][0], g_fPlayerOrigin[id][1], g_fPlayerOrigin[id][2]);
+        g_iItem_Coordinates[id] = ttt_backpack_add(id, out);
 
-      if(g_iItem_Teleport[id] == -1)
-      {
-        formatex(out, charsmax(out), "%L", id, "TTT_ITEM_ID12");
-        g_iItem_Teleport[id] = ttt_backpack_add(id, out);
+        if(g_iItem_Teleport[id] == -1)
+        {
+          formatex(out, charsmax(out), "%L", id, "TTT_ITEM_ID12");
+          g_iItem_Teleport[id] = ttt_backpack_add(id, out);
+        }
+
+        client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM_TELE2", g_fPlayerOrigin[id][0], g_fPlayerOrigin[id][1], g_fPlayerOrigin[id][2]);
       }
 
-      client_print_color(id, print_team_default, "%s %L", TTT_TAG, id, "TTT_ITEM_TELE2", g_fPlayerOrigin[id][0], g_fPlayerOrigin[id][1], g_fPlayerOrigin[id][2]);
       ttt_backpack_show(id);
     }
     else if(g_iItem_Teleport[id] == item)
