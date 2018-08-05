@@ -116,7 +116,7 @@ public ttt_show_me(id)
     static msg[SIZE+1];
     new len;
 
-    len += formatex(msg[len], SIZE - len, html_head(""));
+    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top; margin: 30px 10px;}</style></head><body>");
     len += formatex(msg[len], SIZE - len, "<center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
 
     new num, player, count, alive_state;
@@ -220,7 +220,7 @@ public show_motd_winner(id)
     else if(winner == PC_INNOCENT)
       formatex(out, charsmax(out), "%L", LANG_SERVER, "TTT_IWIN");
 
-    len += formatex(msg[len], SIZE - len, html_head("url('http://%s/ttt/%d.gif')", TTT_REMOTE_HOST, winner));
+    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('http://%s/ttt/%d.gif') no-repeat center top; margin: 30px 10px;}</style></head><body>", TTT_REMOTE_HOST, winner);
     len += formatex(msg[len], SIZE - len, "<center><h1>%s</h1></center>", out);
 
     if(strlen(Detectives) > 0)
@@ -284,7 +284,7 @@ public show_motd_info(id, target)
   if(killedstate > 3)
     killedstate = 0;
 
-  len += formatex(msg[len], SIZE - len, html_head("url('http://%s/ttt/%d.gif')", TTT_REMOTE_HOST, killedstate));
+  len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('http://%s/ttt/%d.gif') no-repeat center top; margin: 30px 10px;}</style></head><body>", TTT_REMOTE_HOST, killedstate);
   len += formatex(msg[len], SIZE - len, "<center><h1>%L %s</h1>", id, special_names[killedstate], name[0]);
   len += formatex(msg[len], SIZE - len, "<h1>%L</h1>", id, "TTT_INFO_LINE3", g_szColors[killedstate], ttt_get_bodydata(target, BODY_TIME));
   len += formatex(msg[len], SIZE - len, "%L <img src='http://%s/ttt/%s.gif'></center>", id, "TTT_INFO_LINE2", g_szColors[killedstate], minutes, seconds, TTT_REMOTE_HOST, killmsg);
@@ -305,7 +305,7 @@ public show_last_states(id)
   if(!g_iCached[1])
   {
     new len;
-    len += formatex(msg[len], SIZE - len, html_head(""));
+    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top; margin: 30px 10px;}</style></head><body>");
 
     new num, player, player_state, count[PLAYER_CLASS];
     static players[32], name[64];
@@ -338,13 +338,6 @@ public show_last_states(id)
 
   if(show)
     show_motd(id, msg, "");
-}
-
-stock html_head(url[], any: ...) {
-  new style[192], background[48];
-  vformat(background, charsmax(background), url, 2);
-  formatex(style, charsmax(style), "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 %s no-repeat center top; margin: 30px 10px;}</style></head><body>", background);
-  return style;
 }
 
 stock get_user_escaped_name(id, name[], len)
