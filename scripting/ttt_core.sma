@@ -489,7 +489,7 @@ public Show_All()
 
 public Ham_TakeDamage_pre(victim, inflictor, attacker, Float:damage, bits)
 {
-  if(!my_return_check(attacker))
+  if(!my_return_check(attacker) && !(bits & DMG_BLAST)) // Exclude C4
   {
     new Float:modifier = g_iPlayerData[attacker][PD_KARMA]/1000.0;
     if(modifier > 0.05 && damage > 0.1)
