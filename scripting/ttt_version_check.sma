@@ -5,18 +5,17 @@
 new g_pSocket;
 
 #define SCRIPT_NAME "/ttt_version_check.php"
-#define REMOTE_HOST "cs.hackers.lv"
 
 public plugin_init()
 {
   register_plugin("[TTT] Version Check", TTT_VERSION, TTT_AUTHOR);
 
   new error;
-  g_pSocket = socket_open(REMOTE_HOST, 80, SOCKET_TCP, error);
+  g_pSocket = socket_open(TTT_REMOTE_HOST, 80, SOCKET_TCP, error);
   if(g_pSocket > 0)
   {
     new string[256];
-    formatex(string, charsmax(string), "GET %s HTTP/1.1^r^nHost: %s^r^n^r^n", SCRIPT_NAME, REMOTE_HOST);
+    formatex(string, charsmax(string), "GET %s HTTP/1.1^r^nHost: %s^r^n^r^n", SCRIPT_NAME, TTT_REMOTE_HOST);
     socket_send(g_pSocket, string, charsmax(string));
     set_task(1.0, "read_web");
   }

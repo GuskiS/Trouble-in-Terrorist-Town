@@ -118,7 +118,7 @@ public Forward_EmitSound_pre(id, channel, sample[])
       if(equal(classname, TTT_DEATHSTATION))
       {
         ttt_set_playerdata(id, PD_KILLEDBYITEM, g_iItem_DeathStation);
-        ExecuteHamB(Ham_Killed, id, entity_get_int(ent, EV_INT_iuser1), 2);
+        ExecuteHamB(Ham_Killed, id, ttt_user_or_server(entity_get_int(ent, EV_INT_iuser1)), 2);
       }
     }
   }

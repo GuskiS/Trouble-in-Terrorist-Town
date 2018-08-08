@@ -26,8 +26,8 @@
   #define client_disconnect client_disconnected
 #endif
 
-#define TTT_VERSION      "2.5.2"
-#define TTT_VERSION_INT  252
+#define TTT_VERSION      "2.6.0"
+#define TTT_VERSION_INT  260
 #define TTT_AUTHOR       "GuskiS"
 #define TTT_TAG          "^3[^4TTT^3]^1"
 
@@ -42,6 +42,7 @@
 #define TTT_MAXBACKPACK  20 // Max items in backpack.
 #define TTT_SETTINGSFILE "ttt_mod.ini"
 #define TTT_CONFIGFILE   "ttt_mod.cfg"
+#define TTT_REMOTE_HOST  "cs.hackers.lv"
 #define TTT_ADMINACCESS  ADMIN_BAN
 
 #pragma semicolon 1

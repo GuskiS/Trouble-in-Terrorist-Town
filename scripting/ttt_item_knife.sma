@@ -117,9 +117,9 @@ public ttt_gamemode(gamemode)
       g_iNadeVelocity[id][0] = false;
       g_iNadeVelocity[id][1] = false;
 
-      if(is_user_alive(id) && g_iKnifeType[id] == K_ON)
-        reset_user_knife(id);
       change_knife_holding(id, K_NONE);
+      if(is_user_alive(id) && get_user_weapon(id) == CSW_KNIFE)
+        reset_user_knife(id);
     }
   }
 }
