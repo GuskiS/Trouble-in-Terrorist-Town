@@ -58,7 +58,7 @@ public ttt_spawnbody(owner, ent)
 
 public ttt_item_selected(id, item, name[], price)
 {
-  if(g_iItemID == item)
+  if(g_iItemID == item && !g_iHasDisguiser[id])
   {
     g_iHasDisguiser[id] = true;
     g_iItemBought = true;

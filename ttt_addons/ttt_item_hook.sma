@@ -90,7 +90,7 @@ public ttt_gamemode(mode)
 
 public ttt_item_selected(id, item, name[], price)
 {
-  if(g_iItemID == item)
+  if(g_iItemID == item && !g_iHookInfo[id][HI_HASHOOK])
   {
     g_iHookInfo[id][HI_HASHOOK] = true;
     g_iHookInfo[id][HI_COUNT] += get_pcvar_num(cvar_count);

@@ -163,7 +163,7 @@ public ttt_gamemode(mode)
 
 public ttt_item_selected(id, item, name[], price)
 {
-  if(g_iItemID == item)
+  if(g_iItemID == item && !g_iHasMine[id])
   {
     g_iHasMine[id] = true;
     g_iItem_Backpack[id] = ttt_backpack_add(id, name);

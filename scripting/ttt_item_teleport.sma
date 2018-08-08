@@ -45,7 +45,7 @@ public ttt_gamemode(gamemode)
 
 public ttt_item_selected(id, item, name[], price)
 {
-  if(g_iItem_Teleporter == item)
+  if(g_iItem_Teleporter == item && !g_iHasTeleporter[id])
   {
     static out[TTT_ITEMLENGHT];
     g_iHasTeleporter[id] = true;
