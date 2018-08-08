@@ -353,9 +353,14 @@ public client_PostThink(id)
   {
     if(g_iC4Info[i][C4STORED] && is_valid_ent(g_iC4Info[i][C4ENT]))
     {
-      entity_get_vector(g_iC4Info[i][C4ENT], EV_VEC_origin, origin);
-      origin[2] +=30.0;
-      create_icon_origin(id, origin, g_iC4Sprite, 1);
+      if(entity_has_class(g_iC4Info[i][C4ENT], "grenade")) {
+        entity_get_vector(g_iC4Info[i][C4ENT], EV_VEC_origin, origin);
+        origin[2] +=30.0;
+        create_icon_origin(id, origin, g_iC4Sprite, 1);
+      } else {
+        g_iC4Info[i][C4ENT] = 0;
+        c4_clear_one(i);
+      }
     }
   }
 }
