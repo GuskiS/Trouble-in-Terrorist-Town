@@ -4,12 +4,6 @@
 #include <ttt>
 
 new g_iCached[2], g_iKilledWho[33][33], g_pCommandMenuID1, g_pCommandMenuID2, g_iPlayerStates[33][2];
-new const g_szIconNames[][] = 
-{
-  "suicide", "p228", "", "scout", "hegrenade", "xm1014", "c4", "mac10", "aug", "hegrenade", "elite", "fiveseven",
-  "ump45", "sg550", "galil", "famas", "usp", "glock18", "awp", "mp5navy", "m249", "m3", "m4a1", "tmp", "g3sg1", "hegrenade",
-  "deagle", "sg552", "ak47", "crowbar", "p90", "0", "1", "2", "3"
-};
 
 new const g_szColors[][] = 
 {
@@ -21,23 +15,10 @@ new const g_szColors[][] =
   "#F57011"  // orange
 };
 
-public plugin_precache()
-{
-  static icon[32];
-  for(new i = 0; i <= charsmax(g_szIconNames); i++)
-  {
-    if(i < 5 && strlen(g_szIconNames[i]) < 3) continue;
-    formatex(icon, charsmax(icon), "gfx/ttt/%s.gif", g_szIconNames[i]);
-    precache_generic(icon);
-  }
-}
-
 public plugin_init()
 {
   register_plugin("[TTT] Show infos", TTT_VERSION, TTT_AUTHOR);
 
-  // register_clcmd("say /tttme", "ttt_show_me");
-  // register_clcmd("say_team /tttme", "ttt_show_me");
   g_pCommandMenuID1 = ttt_command_add("/me");
   g_pCommandMenuID2 = ttt_command_add("Last states");
 
@@ -135,11 +116,11 @@ public ttt_show_me(id)
     static msg[SIZE+1];
     new len;
 
-    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top;}</style></head><body>");
-    len += formatex(msg[len], SIZE - len, "</br><center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
+    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top; margin: 30px 10px;}</style></head><body>");
+    len += formatex(msg[len], SIZE - len, "<center><h2>%L</h2></center>", id, "TTT_WINNER_LINE7");
 
     new num, player, count, alive_state;
-    static players[32], name[32];
+    static players[32], name[64];
     get_players(players, num);
     for(--num; num >= 0; num--)
     {
@@ -148,7 +129,7 @@ public ttt_show_me(id)
       {
         count++;
         alive_state = ttt_get_alivestate(player);
-        get_user_name(player, name, charsmax(name));
+        get_user_escaped_name(player, name, charsmax(name));
         len += formatex(msg[len], SIZE - len, "<b style='color:%s'>[%L] %s</b></br>", g_szColors[alive_state], id, special_names[alive_state], name);
       }
     }
@@ -184,7 +165,7 @@ public show_motd_winner(id)
   if(!g_iCached[0])
   {
     new i, highest, num, killedstate, currentstate;
-    new name[32], Traitors[256], Detectives[256], suicide[128], kills[128], c4[70], out[64], players[32];
+    new name[64], Traitors[256], Detectives[256], suicide[128], kills[128], c4[70], out[64], players[32];
 
     get_players(players, num);
     for(--num; num >= 0; num--)
@@ -193,7 +174,7 @@ public show_motd_winner(id)
 
       killedstate = ttt_get_alivestate(i);
       currentstate = ttt_get_playerstate(i);
-      get_user_name(i, name, charsmax(name));
+      get_user_escaped_name(i, name, charsmax(name));
 
       if(currentstate == PC_TRAITOR || killedstate == PC_TRAITOR)
         format(Traitors, charsmax(Traitors), "%s, %s", name, Traitors);
@@ -239,8 +220,8 @@ public show_motd_winner(id)
     else if(winner == PC_INNOCENT)
       formatex(out, charsmax(out), "%L", LANG_SERVER, "TTT_IWIN");
 
-    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('gfx/ttt/%d.gif') no-repeat center top;}</style></head><body>", winner);
-    len += formatex(msg[len], SIZE - len, "</br><center><h1>%s</h1></center>", out);
+    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('http://%s/ttt/%d.gif') no-repeat center top; margin: 30px 10px;}</style></head><body>", TTT_REMOTE_HOST, winner);
+    len += formatex(msg[len], SIZE - len, "<center><h1>%s</h1></center>", out);
 
     if(strlen(Detectives) > 0)
       len += formatex(msg[len], SIZE - len, "<b style='color:%s'>%L: %s</b><br/>", g_szColors[PC_DETECTIVE], LANG_SERVER, special_names[PC_DETECTIVE], Detectives);
@@ -264,7 +245,7 @@ public show_motd_winner(id)
 
   // len += formatex(wholemsg[len], SIZE - len, "%L</br>", LANG_SERVER, "TTT_WINNER_LINE7");
   new num, player, count, alive_state;
-  static players[32], name[32];
+  static players[32], name[64];
   get_players(players, num);
   for(--num; num >= 0; num--)
   {
@@ -273,7 +254,7 @@ public show_motd_winner(id)
     {
       count++;
       alive_state = ttt_get_alivestate(player);
-      get_user_name(player, name, charsmax(name));
+      get_user_escaped_name(player, name, charsmax(name));
       len += formatex(wholemsg[len], SIZE - len, "%L <b style='color:%s'>[%L] %s</b></br>", LANG_SERVER, "TTT_WINNER_LINE7", g_szColors[alive_state], LANG_SERVER, special_names[alive_state], name);
     }
   }
@@ -291,8 +272,8 @@ public show_motd_winner(id)
 
 public show_motd_info(id, target)
 {
-  static name[2][32], killmsg[64];
-  get_user_name(target, name[0], charsmax(name[]));
+  static name[2][64], killmsg[64];
+  get_user_escaped_name(target, name[0], charsmax(name[]));
   new minutes = (ttt_get_playerdata(target, PD_KILLEDTIME) / 60) % 60;
   new seconds = ttt_get_playerdata(target, PD_KILLEDTIME) % 60;
   ttt_get_kill_message(target, ttt_get_playerdata(target, PD_KILLEDBY), killmsg, charsmax(killmsg), 0);
@@ -303,16 +284,16 @@ public show_motd_info(id, target)
   if(killedstate > 3)
     killedstate = 0;
 
-  len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('gfx/ttt/%d.gif') no-repeat center top;}</style></head><body>", killedstate);
-  len += formatex(msg[len], SIZE - len, "</br><center><h1>%L %s</h1>", id, special_names[killedstate], name[0]);
+  len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 url('http://%s/ttt/%d.gif') no-repeat center top; margin: 30px 10px;}</style></head><body>", TTT_REMOTE_HOST, killedstate);
+  len += formatex(msg[len], SIZE - len, "<center><h1>%L %s</h1>", id, special_names[killedstate], name[0]);
   len += formatex(msg[len], SIZE - len, "<h1>%L</h1>", id, "TTT_INFO_LINE3", g_szColors[killedstate], ttt_get_bodydata(target, BODY_TIME));
-  len += formatex(msg[len], SIZE - len, "%L <img src='gfx/ttt/%s.gif'></center>", id, "TTT_INFO_LINE2", g_szColors[killedstate], minutes, seconds, killmsg);
+  len += formatex(msg[len], SIZE - len, "%L <img src='http://%s/ttt/%s.gif'></center>", id, "TTT_INFO_LINE2", g_szColors[killedstate], minutes, seconds, TTT_REMOTE_HOST, killmsg);
   len += formatex(msg[len], SIZE - len, "</body></html>");
   formatex(motdname, charsmax(motdname), "%L", id, "TTT_INFO_LINE1");
 
   show_motd(id, msg, motdname);
 
-  get_user_name(id, name[1], charsmax(name[]));
+  get_user_escaped_name(id, name[1], charsmax(name[]));
   ttt_log_to_file(LOG_MISC, "%s inspected deadbody of %s", name[1], name[0]);
 }
 
@@ -324,10 +305,10 @@ public show_last_states(id)
   if(!g_iCached[1])
   {
     new len;
-    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top;}</style></head><body>");
+    len += formatex(msg[len], SIZE - len, "<html><head><meta charset='utf-8'><style>body{background:#ebf3f8 no-repeat center top; margin: 30px 10px;}</style></head><body>");
 
     new num, player, player_state, count[PLAYER_CLASS];
-    static players[32], name[32];
+    static players[32], name[64];
     get_players(players, num);
     for(--num; num >= 0; num--)
     {
@@ -336,7 +317,7 @@ public show_last_states(id)
       if(player_state > -1)
       {
         count[player_state]++;
-        get_user_name(player, name, charsmax(name));
+        get_user_escaped_name(player, name, charsmax(name));
         len += formatex(msg[len], SIZE - len, "<b style='color:%s'>[%L] %s</b></br>", g_szColors[player_state], id, special_names[player_state], name);
       }
     }
@@ -357,4 +338,13 @@ public show_last_states(id)
 
   if(show)
     show_motd(id, msg, "");
+}
+
+stock get_user_escaped_name(id, name[], len)
+{
+  get_user_name(id, name, len);
+  replace_all(name, len, "^"", "&quot;");
+  replace_all(name, len, "&", "&amp;");
+  replace_all(name, len, "<", "&lt;");
+  replace_all(name, len, ">", "&gt;");
 }

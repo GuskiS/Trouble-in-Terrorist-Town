@@ -42,6 +42,7 @@
 #define TTT_MAXBACKPACK  20 // Max items in backpack.
 #define TTT_SETTINGSFILE "ttt_mod.ini"
 #define TTT_CONFIGFILE   "ttt_mod.cfg"
+#define TTT_REMOTE_HOST  "cs.hackers.lv"
 #define TTT_ADMINACCESS  ADMIN_BAN
 
 #pragma semicolon 1
