@@ -36,6 +36,7 @@ enum _:C4INFO
 new g_iC4Info[MAX_C4][C4INFO], g_iItem_C4, g_iC4Time[33], g_iSetupItem[33] = {-1, -1, ...};
 new cvar_c4_maxtime, cvar_c4_mintime, cvar_c4_default, cvar_c4_elapsed, cvar_price_c4;
 new g_iC4Sync[MAX_C4], Float:g_fWaitTime[33], g_iC4Sprite, g_iItemBought, g_pBombStatusForward;
+new g_iBombTargetEnt;
 
 public plugin_precache()
 {
@@ -79,6 +80,9 @@ public ttt_plugin_cfg()
   formatex(name, charsmax(name), "%L", LANG_PLAYER, "TTT_ITEM_ID0");
   g_iItem_C4 = ttt_buymenu_add(name, get_pcvar_num(cvar_price_c4), PC_TRAITOR);
   ttt_add_exception(g_iItem_C4);
+
+  remove_entity_name("func_bomb_target");
+  remove_entity_name("info_bomb_target");
 }
 
 public client_putinserver(id)
@@ -100,9 +104,6 @@ public ttt_gamemode(gamemode)
   
   if(gamemode == GAME_PREPARING || gamemode == GAME_RESTARTING)
   {
-    remove_entity_name("func_bomb_target");
-    remove_entity_name("info_bomb_target");
-
     Create_BombTarget();
 
     if(!g_iItemBought)
@@ -195,9 +196,11 @@ public Forward_EmitSound_pre(ent, channel, const sound[])
 
 public Create_BombTarget()
 {
-  new NewBombTarget = create_entity("func_bomb_target");
-  DispatchSpawn(NewBombTarget);
-  entity_set_size(NewBombTarget, Float:{-8191.0, -8191.0, -8191.0}, Float:{8191.0, 8191.0, 8191.0});
+  if(!g_iBombTargetEnt) {
+    g_iBombTargetEnt = create_entity("func_bomb_target");
+    DispatchSpawn(g_iBombTargetEnt);
+    entity_set_size(g_iBombTargetEnt, Float:{-8191.0, -8191.0, -8191.0}, Float:{8191.0, 8191.0, 8191.0});
+  }
 }
 
 public bomb_planted(id)
